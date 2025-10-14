@@ -1,14 +1,17 @@
 // مودال عرض المهام المؤرشفة
 import { useState, useEffect } from 'react';
-import { Archive, RotateCcw, Trash2, Copy, Calendar } from 'lucide-react';
+import { Archive, RotateCcw, Trash2, Copy, Calendar, RotateCcw as RestoreAll, Trash2 as DeleteAll } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
+import { Checkbox } from './ui/checkbox';
 import { getArchivedTasks, unarchiveTask, deleteTask } from '@/lib/db';
 import { showToast } from '@/lib/toast';
+import { getTagClassName, getTagIcon } from '@/lib/tagColors';
+import { cn } from '@/lib/utils';
 import type { Task, Board } from '@/types';
 
 interface ArchiveModalProps {
@@ -34,6 +37,10 @@ const priorityLabels: Record<Task['priority'], { label: string; color: string }>
 
 export function ArchiveModal({ open, onOpenChange, boards, onTaskRestored, onTaskDeleted }: ArchiveModalProps) {
   const [archivedTasks, setArchivedTasks] = useState<Task[]>([]);
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+  
+  // التحقق من الوضع الليلي
+  const isDark = document.documentElement.classList.contains('dark');
 
   useEffect(() => {
     if (open) {
@@ -49,17 +56,93 @@ export function ArchiveModal({ open, onOpenChange, boards, onTaskRestored, onTas
   };
 
   const handleRestore = async (taskId: string) => {
-    await unarchiveTask(taskId);
-    showToast('تم استعادة المهمة من الأرشيف', 'success');
-    loadArchivedTasks();
-    onTaskRestored();
+    try {
+      await unarchiveTask(taskId);
+      showToast('تم استعادة المهمة من الأرشيف', 'success');
+      loadArchivedTasks();
+      onTaskRestored();
+    } catch (error) {
+      console.error('خطأ في استعادة المهمة:', error);
+      showToast('حدث خطأ أثناء استعادة المهمة', 'error');
+    }
   };
 
   const handleDelete = async (taskId: string) => {
-    await deleteTask(taskId);
-    showToast('تم حذف المهمة نهائياً', 'info');
-    loadArchivedTasks();
-    onTaskDeleted();
+    try {
+      await deleteTask(taskId);
+      showToast('تم حذف المهمة نهائياً', 'info');
+      loadArchivedTasks();
+      onTaskDeleted();
+    } catch (error) {
+      console.error('خطأ في حذف المهمة:', error);
+      showToast('حدث خطأ أثناء حذف المهمة', 'error');
+    }
+  };
+
+  const handleBulkRestore = async () => {
+    if (selectedTasks.size === 0) {
+      showToast('الرجاء اختيار مهام للاستعادة', 'warning');
+      return;
+    }
+
+    try {
+      await Promise.all(Array.from(selectedTasks).map(taskId => unarchiveTask(taskId)));
+      showToast(`تم استعادة ${selectedTasks.size} مهمة من الأرشيف`, 'success');
+      setSelectedTasks(new Set());
+      loadArchivedTasks();
+      onTaskRestored();
+    } catch (error) {
+      console.error('خطأ في استعادة المهام:', error);
+      showToast('حدث خطأ أثناء استعادة المهام', 'error');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTasks.size === 0) {
+      showToast('الرجاء اختيار مهام للحذف', 'warning');
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'حذف المهام المحددة؟',
+      text: `سيتم حذف ${selectedTasks.size} مهمة نهائياً`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'حذف',
+      cancelButtonText: 'إلغاء',
+      confirmButtonColor: '#ef4444',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await Promise.all(Array.from(selectedTasks).map(taskId => deleteTask(taskId)));
+        showToast(`تم حذف ${selectedTasks.size} مهمة نهائياً`, 'info');
+        setSelectedTasks(new Set());
+        loadArchivedTasks();
+        onTaskDeleted();
+      } catch (error) {
+        console.error('خطأ في حذف المهام:', error);
+        showToast('حدث خطأ أثناء حذف المهام', 'error');
+      }
+    }
+  };
+
+  const handleSelectTask = (taskId: string) => {
+    const newSelected = new Set(selectedTasks);
+    if (newSelected.has(taskId)) {
+      newSelected.delete(taskId);
+    } else {
+      newSelected.add(taskId);
+    }
+    setSelectedTasks(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTasks.size === archivedTasks.length) {
+      setSelectedTasks(new Set());
+    } else {
+      setSelectedTasks(new Set(archivedTasks.map(t => t.id)));
+    }
   };
 
   const handleCopyToClipboard = async (task: Task) => {
@@ -86,6 +169,43 @@ ${task.description ? `الوصف: ${task.description}\n` : ''}${task.tags.length
             <Archive className="h-6 w-6" />
             الأرشيف ({archivedTasks.length})
           </DialogTitle>
+          
+          {archivedTasks.length > 0 && (
+            <div className="flex items-center gap-2 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAll}
+                className="gap-2"
+              >
+                {selectedTasks.size === archivedTasks.length ? 'إلغاء الكل' : 'تحديد الكل'}
+              </Button>
+              
+              {selectedTasks.size > 0 && (
+                <>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleBulkRestore}
+                    className="gap-2"
+                  >
+                    <RestoreAll className="h-4 w-4" />
+                    استعادة المحدد ({selectedTasks.size})
+                  </Button>
+                  
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                    className="gap-2"
+                  >
+                    <DeleteAll className="h-4 w-4" />
+                    حذف المحدد ({selectedTasks.size})
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
         </DialogHeader>
 
         <ScrollArea className="h-[600px] pr-4">
@@ -103,10 +223,18 @@ ${task.description ? `الوصف: ${task.description}\n` : ''}${task.tags.length
                 return (
                   <div 
                     key={task.id} 
-                    className="p-4 border rounded-lg hover:shadow-md transition-shadow bg-card"
+                    className={`p-4 border rounded-lg hover:shadow-md transition-shadow bg-card ${
+                      selectedTasks.has(task.id) ? 'ring-2 ring-primary/30 bg-primary/5' : ''
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 space-y-2">
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          checked={selectedTasks.has(task.id)}
+                          onCheckedChange={() => handleSelectTask(task.id)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1 space-y-2">
                         <div className="flex items-start gap-2">
                           <h3 className="font-cairo font-semibold text-lg">{task.title}</h3>
                         </div>
@@ -137,14 +265,23 @@ ${task.description ? `الوصف: ${task.description}\n` : ''}${task.tags.length
                         </div>
                         
                         {task.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
+                          <div className="flex flex-wrap gap-1.5">
                             {task.tags.map((tag, i) => (
-                              <Badge key={i} variant="secondary" className="text-xs">
-                                #{tag}
-                              </Badge>
+                              <span
+                                key={i}
+                                className={cn(
+                                  'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 cursor-default',
+                                  getTagClassName(tag, isDark)
+                                )}
+                                title={tag}
+                              >
+                                <span className="text-xs">{getTagIcon(tag)}</span>
+                                <span className="truncate max-w-[80px]">{tag}</span>
+                              </span>
                             ))}
                           </div>
                         )}
+                        </div>
                       </div>
                       
                       <div className="flex gap-2">

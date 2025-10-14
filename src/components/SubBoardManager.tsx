@@ -1,6 +1,6 @@
 // إدارة الأقسام الفرعية
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, Edit, Trash2, FolderTree } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Edit, Trash2, FolderTree, Layers } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -13,6 +13,8 @@ interface SubBoardManagerProps {
   onToggleCollapse: (boardId: string) => void;
   onEditBoard: (board: Board) => void;
   onDeleteBoard: (boardId: string) => void;
+  onAddTask: (boardId: string) => void;
+  onBulkAdd: (boardId: string) => void;
 }
 
 export function SubBoardManager({ 
@@ -21,7 +23,9 @@ export function SubBoardManager({
   onAddSubBoard, 
   onToggleCollapse,
   onEditBoard,
-  onDeleteBoard 
+  onDeleteBoard,
+  onAddTask,
+  onBulkAdd
 }: SubBoardManagerProps) {
   const subBoards = allBoards.filter(b => b.parentId === board.id);
   const hasSubBoards = subBoards.length > 0;
@@ -85,8 +89,8 @@ export function SubBoardManager({
       {hasSubBoards && !board.collapsed && (
         <div className="mr-6 space-y-2 border-r-2 border-muted pr-3">
           {subBoards.map((subBoard) => (
-            <div key={subBoard.id} className="p-2 border rounded-lg bg-muted/50">
-              <div className="flex items-center justify-between gap-2">
+            <div key={subBoard.id} className="p-3 border rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
+              <div className="flex items-center justify-between gap-2 mb-2">
                 <span className="font-cairo text-sm font-medium">{subBoard.title}</span>
                 <div className="flex gap-1">
                   <Button
@@ -94,6 +98,7 @@ export function SubBoardManager({
                     variant="ghost"
                     className="h-7 w-7"
                     onClick={() => onEditBoard(subBoard)}
+                    title="تعديل القسم الفرعي"
                   >
                     <Edit className="h-3 w-3" />
                   </Button>
@@ -102,10 +107,35 @@ export function SubBoardManager({
                     variant="ghost"
                     className="h-7 w-7 text-destructive"
                     onClick={() => onDeleteBoard(subBoard.id)}
+                    title="حذف القسم الفرعي"
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
+              </div>
+              
+              {/* أزرار إضافة المهام للقسم الفرعي */}
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs px-2"
+                  onClick={() => onAddTask(subBoard.id)}
+                  title="إضافة مهمة جديدة"
+                >
+                  <Plus className="h-3 w-3 ml-1" />
+                  مهمة
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs px-2"
+                  onClick={() => onBulkAdd(subBoard.id)}
+                  title="إضافة مهام متعددة"
+                >
+                  <Layers className="h-3 w-3 ml-1" />
+                  متعددة
+                </Button>
               </div>
             </div>
           ))}

@@ -3,13 +3,15 @@ import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { Plus, Timer, Download, Moon, Sun, Layers, Settings2, Smartphone, Copy, Bell, BellOff, Archive } from 'lucide-react';
+import { Plus, Timer, Download, Upload, Moon, Sun, Layers, Settings2, Smartphone, Copy, Bell, BellOff, Archive, FolderTree } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BoardColumn } from '@/components/BoardColumn';
 import { TaskEditModal } from '@/components/TaskEditModal';
 import { BulkAddModal } from '@/components/BulkAddModal';
+import { ImportModal } from '@/components/ImportModal';
 import { ExportModal } from '@/components/ExportModal';
 import { ArchiveModal } from '@/components/ArchiveModal';
+import { BoardManager } from '@/components/BoardManager';
 import { FocusTimer, FocusTimerBadge } from '@/components/FocusTimer';
 import { SearchBar, FilterState } from '@/components/SearchBar';
 import { Statistics } from '@/components/Statistics';
@@ -47,10 +49,12 @@ export default function Index() {
   
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
   const [timerModalOpen, setTimerModalOpen] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [boardManagerOpen, setBoardManagerOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [defaultBoardId, setDefaultBoardId] = useState<string>();
   const [focusedBoardId, setFocusedBoardId] = useState<string | null>(null);
@@ -141,12 +145,28 @@ export default function Index() {
       const totalTasks = updated.length;
       const completedTasks = updated.filter(t => t.status === 'completed').length;
       await checkAndNotifyProgress(totalTasks, completedTasks);
+      
+      // التحقق من اكتمال جميع المهام
+      if (checkAllTasksCompleted(updated)) {
+        setTimeout(() => {
+          showAllTasksCompletedAlert();
+        }, 1000);
+      }
     } else {
       const newTask: Task = {
         id: `task-${Date.now()}`,
-        ...taskData as any,
+        title: taskData.title || 'مهمة جديدة',
+        description: taskData.description,
+        status: taskData.status || 'waiting',
+        priority: taskData.priority || 'medium',
+        tags: taskData.tags || [],
+        dueDate: taskData.dueDate,
+        boardId: taskData.boardId || boards[0]?.id || '',
+        completedAt: taskData.completedAt,
+        archived: taskData.archived || false,
+        archivedAt: taskData.archivedAt,
         createdAt: new Date().toISOString(),
-        order: tasks.filter(t => t.boardId === taskData.boardId).length,
+        order: tasks.filter(t => t.boardId === (taskData.boardId || boards[0]?.id || '')).length,
       };
       setTasks([...tasks, newTask]);
       await saveTask(newTask);
@@ -259,6 +279,59 @@ export default function Index() {
     }
   };
 
+  // التحقق من اكتمال جميع المهام
+  const checkAllTasksCompleted = (updatedTasks: Task[]) => {
+    const activeTasks = updatedTasks.filter(t => !t.archived);
+    if (activeTasks.length === 0) return false;
+    
+    const allCompleted = activeTasks.every(t => t.status === 'completed');
+    return allCompleted;
+  };
+
+  // إظهار رسالة اكتمال جميع المهام
+  const showAllTasksCompletedAlert = async () => {
+    const result = await Swal.fire({
+      title: '🎉 مبروك!',
+      html: `
+        <div class="text-center">
+          <div class="text-6xl mb-4">🏆</div>
+          <h3 class="text-2xl font-bold text-green-600 mb-4">لقد أكملت جميع المهام!</h3>
+          <p class="text-gray-600 mb-6">أحسنت! لقد أنجزت جميع مهامك بنجاح. هذا إنجاز رائع يستحق الاحتفال!</p>
+          <div class="flex justify-center space-x-4 text-sm text-gray-500">
+            <span>✨ إنتاجية عالية</span>
+            <span>💪 مثابرة</span>
+            <span>🎯 تركيز</span>
+          </div>
+        </div>
+      `,
+      icon: 'success',
+      showCancelButton: true,
+      confirmButtonText: 'إضافة مهام جديدة',
+      cancelButtonText: 'الاحتفال فقط! 🎊',
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#6b7280',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      backdrop: `
+        rgba(0,0,0,0.4)
+        left top
+        no-repeat
+      `,
+      customClass: {
+        popup: 'animate-bounce',
+        title: 'font-cairo',
+        htmlContainer: 'font-tajawal',
+        confirmButton: 'font-cairo',
+        cancelButton: 'font-cairo'
+      }
+    });
+
+    if (result.isConfirmed) {
+      // إضافة مهمة جديدة
+      setTaskModalOpen(true);
+    }
+  };
+
   const handleCopyAllTasks = async () => {
     const tasksToUse = searchQuery || filters.status.length > 0 || filters.priority.length > 0 || filters.tags.length > 0 || filters.boardId || filters.overdue
       ? filteredTasks
@@ -347,6 +420,9 @@ export default function Index() {
               <Button onClick={() => setStatusModalOpen(true)} variant="outline" size="icon" title="إدارة الحالات">
                 <Settings2 className="h-5 w-5" />
               </Button>
+              <Button onClick={() => setBoardManagerOpen(true)} variant="outline" size="icon" title="إدارة الأقسام">
+                <FolderTree className="h-5 w-5" />
+              </Button>
               <Button onClick={handleCopyAllTasks} variant="outline" size="icon" title="نسخ جميع المهام">
                 <Copy className="h-5 w-5" />
               </Button>
@@ -364,6 +440,10 @@ export default function Index() {
             <Button onClick={() => setBulkModalOpen(true)} variant="secondary">
               <Layers className="h-4 w-4 ml-2" />
               مهام متعددة
+            </Button>
+            <Button onClick={() => setImportModalOpen(true)} variant="secondary">
+              <Upload className="h-4 w-4 ml-2" />
+              استيراد
             </Button>
             <Button onClick={async () => { const { value } = await Swal.fire({ title: 'قسم جديد', input: 'text', inputPlaceholder: 'اسم القسم', showCancelButton: true }); if (value) { const newBoard: Board = { id: `board-${Date.now()}`, title: value, order: boards.length, createdAt: new Date().toISOString() }; setBoards([...boards, newBoard]); await saveBoard(newBoard); } }}>
               <Plus className="h-4 w-4 ml-2" />
@@ -412,6 +492,13 @@ export default function Index() {
                         const totalTasks = updated.length;
                         const completedTasks = updated.filter(t => t.status === 'completed').length;
                         await checkAndNotifyProgress(totalTasks, completedTasks);
+                        
+                        // التحقق من اكتمال جميع المهام
+                        if (status === 'completed' && checkAllTasksCompleted(updated)) {
+                          setTimeout(() => {
+                            showAllTasksCompletedAlert();
+                          }, 1000); // تأخير قصير لإظهار الإشعار بعد تحديث المهمة
+                        }
                       }}
                       onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }} 
                       onMoveToBoard={handleMoveToBoard}
@@ -430,10 +517,20 @@ export default function Index() {
 
       <TaskEditModal open={taskModalOpen} onOpenChange={setTaskModalOpen} task={editingTask} boards={boards} defaultBoardId={defaultBoardId} onSave={handleSaveTask} />
       <BulkAddModal open={bulkModalOpen} onOpenChange={setBulkModalOpen} boards={boards} defaultBoardId={defaultBoardId} onTasksAdded={loadData} />
+      <ImportModal open={importModalOpen} onOpenChange={setImportModalOpen} boards={boards} onTasksAdded={loadData} onBoardsAdded={loadData} />
       <ExportModal open={exportModalOpen} onOpenChange={setExportModalOpen} boards={boards} tasks={filteredTasks} isFiltered={searchQuery !== '' || filters.status.length > 0} />
       <ArchiveModal open={archiveModalOpen} onOpenChange={setArchiveModalOpen} boards={boards} onTaskRestored={loadData} onTaskDeleted={loadData} />
       <FocusTimer open={timerModalOpen} onOpenChange={setTimerModalOpen} />
       <StatusManagement open={statusModalOpen} onOpenChange={setStatusModalOpen} onStatusesChange={() => loadData()} />
+      <BoardManager 
+        open={boardManagerOpen} 
+        onOpenChange={setBoardManagerOpen} 
+        boards={boards} 
+        onAddBoard={handleAddSubBoard}
+        onEditBoard={async (b) => { const { value } = await Swal.fire({ title: 'تعديل القسم', input: 'text', inputValue: b.title, showCancelButton: true }); if (value) { const updated = boards.map(board => board.id === b.id ? { ...board, title: value } : board); setBoards(updated); await saveBoard({ ...b, title: value }); } }}
+        onDeleteBoard={async (id) => { const result = await Swal.fire({ title: 'حذف القسم؟', text: 'سيتم حذف جميع المهام فيه', icon: 'warning', showCancelButton: true, confirmButtonText: 'حذف', confirmButtonColor: '#ef4444' }); if (result.isConfirmed) { setBoards(boards.filter(b => b.id !== id)); setTasks(tasks.filter(t => t.boardId !== id)); await deleteBoard(id); } }}
+        onToggleCollapse={handleToggleBoardCollapse}
+      />
     </div>
   );
 }

@@ -17,6 +17,7 @@ import {
 } from './ui/dropdown-menu';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
+import { getTagClassName, getTagIcon } from '@/lib/tagColors';
 
 interface TaskTableProps {
   tasks: Task[];
@@ -41,6 +42,8 @@ export function TaskTable({
   onMoveToBoard,
   onArchive,
 }: TaskTableProps) {
+  // التحقق من الوضع الليلي
+  const isDark = document.documentElement.classList.contains('dark');
   const statusLabels: Record<Task['status'], string> = {
     working: 'قيد العمل',
     waiting: 'بانتظار',
@@ -159,17 +162,25 @@ export function TaskTable({
                     )}
                   </td>
                   <td>
-                    <div className="flex gap-1 flex-wrap">
-                      {task.tags.slice(0, 2).map((tag, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs px-2 py-0.5">
-                          <Tag className="h-2.5 w-2.5 ml-1" />
-                          {tag}
-                        </Badge>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {task.tags.slice(0, 3).map((tag, i) => (
+                        <span
+                          key={i}
+                          className={cn(
+                            'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 cursor-default',
+                            getTagClassName(tag, isDark)
+                          )}
+                          title={tag}
+                        >
+                          <span className="text-xs">{getTagIcon(tag)}</span>
+                          <span className="truncate max-w-[80px]">{tag}</span>
+                        </span>
                       ))}
-                      {task.tags.length > 2 && (
-                        <Badge variant="outline" className="text-xs px-2 py-0.5">
-                          +{task.tags.length - 2}
-                        </Badge>
+                      {task.tags.length > 3 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground border border-muted-foreground/20">
+                          <span className="text-xs">🏷️</span>
+                          +{task.tags.length - 3}
+                        </span>
                       )}
                     </div>
                   </td>

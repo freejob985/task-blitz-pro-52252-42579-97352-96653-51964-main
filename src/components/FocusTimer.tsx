@@ -12,6 +12,7 @@ import { playBeep, playSound } from '@/lib/sounds';
 import { saveSession } from '@/lib/db';
 import type { FocusSession } from '@/types';
 import { cn } from '@/lib/utils';
+import { FocusProgressNotification } from './ProgressNotification';
 
 interface FocusTimerProps {
   open: boolean;
@@ -26,6 +27,9 @@ export function FocusTimer({ open, onOpenChange }: FocusTimerProps) {
   const [mode, setMode] = useState<'focus' | 'break'>('focus');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showProgressNotification, setShowProgressNotification] = useState(false);
+  const [progressMessage, setProgressMessage] = useState('');
+  const [notifiedMilestones, setNotifiedMilestones] = useState<Set<number>>(new Set());
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const sessionRef = useRef<FocusSession | null>(null);
@@ -228,9 +232,54 @@ export function FocusTimer({ open, onOpenChange }: FocusTimerProps) {
   const initialSeconds = mode === 'focus' ? 25 * 60 : 5 * 60;
   const progress = ((initialSeconds - totalSeconds) / initialSeconds) * 100;
 
+  // التحقق من المعالم وإظهار الإشعارات
+  useEffect(() => {
+    if (isRunning && !isPaused && mode === 'focus') {
+      const milestones = [25, 50, 70, 100];
+      const currentProgress = Math.round(progress);
+      
+      for (const milestone of milestones) {
+        if (currentProgress >= milestone && !notifiedMilestones.has(milestone)) {
+          const messages = {
+            25: 'رائع! لقد وصلت إلى 25% من جلسة التركيز 🎯',
+            50: 'ممتاز! نصف الطريق مكتمل! 🚀',
+            70: 'رائع جداً! 70% مكتمل، استمر! 💪',
+            100: 'مذهل! لقد أكملت جلسة التركيز بنجاح! 🏆'
+          };
+          
+          setProgressMessage(messages[milestone as keyof typeof messages]);
+          setShowProgressNotification(true);
+          setNotifiedMilestones(prev => new Set([...prev, milestone]));
+          
+          // إخفاء الإشعار تلقائياً بعد 3 ثوان
+          setTimeout(() => {
+            setShowProgressNotification(false);
+          }, 3000);
+          
+          break;
+        }
+      }
+    }
+  }, [progress, isRunning, isPaused, mode, notifiedMilestones]);
+
+  // إعادة تعيين المعالم عند بدء جلسة جديدة
+  useEffect(() => {
+    if (isRunning && !isPaused) {
+      setNotifiedMilestones(new Set());
+    }
+  }, [isRunning, isPaused]);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" dir="rtl">
+    <>
+      <FocusProgressNotification
+        percentage={Math.round(progress)}
+        message={progressMessage}
+        isVisible={showProgressNotification}
+        onClose={() => setShowProgressNotification(false)}
+      />
+      
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
         <DialogHeader>
           <DialogTitle className="font-cairo text-2xl flex items-center gap-2">
             <Timer className="h-6 w-6" />
@@ -411,6 +460,7 @@ export function FocusTimer({ open, onOpenChange }: FocusTimerProps) {
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
 

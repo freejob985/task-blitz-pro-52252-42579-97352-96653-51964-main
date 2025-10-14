@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { parseLinesToTasks, parseCSVToTasks } from '@/lib/bulk';
 import { saveTasks } from '@/lib/db';
 import { showToast } from '@/lib/toast';
-import { playSound } from '@/lib/sounds';
+import { playSound, playBulkAddSound } from '@/lib/sounds';
 import type { Board, Task } from '@/types';
 
 interface BulkAddModalProps {
@@ -59,8 +59,8 @@ export function BulkAddModal({
       await saveTasks(tasks);
       setLastAddedTasks(tasks);
 
-      // تشغيل صوت
-      await playSound('create');
+      // تشغيل صوت خاص للمهام المتعددة
+      await playBulkAddSound();
 
       // إظهار نتيجة
       showToast(`✅ تم إضافة ${tasks.length} مهمة بنجاح!`, 'success');

@@ -218,6 +218,8 @@ export function BoardColumn({
                 onToggleCollapse={onToggleBoardCollapse}
                 onEditBoard={onEditBoard}
                 onDeleteBoard={onDeleteBoard}
+                onAddTask={onAddTask}
+                onBulkAdd={onBulkAdd}
               />
             </div>
           )}

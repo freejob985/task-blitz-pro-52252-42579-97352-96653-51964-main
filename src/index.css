@@ -255,4 +255,49 @@ All colors MUST be HSL.
   .task-table tr.completed td {
     @apply opacity-60;
   }
+  
+  /* Progress Notification Animations */
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slide-out-right {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+  
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s ease-out;
+  }
+  
+  .animate-slide-out-right {
+    animation: slide-out-right 0.3s ease-in;
+  }
+  
+  /* Progress Ring Animation */
+  @keyframes progress-ring {
+    from {
+      stroke-dashoffset: 100;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  
+  .progress-ring {
+    animation: progress-ring 1s ease-out;
+  }
 }
