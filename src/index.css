@@ -1,0 +1,258 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Splash Screen Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+    opacity: 0.6;
+  }
+}
+
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animation-delay-500 {
+  animation-delay: 500ms;
+}
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* ألوان النظام الفاتح */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* ألوان أساسية - أزرق فيروزي للمهنية */
+    --primary: 195 85% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 195 85% 55%;
+
+    /* ثانوي - برتقالي ذهبي للطاقة */
+    --secondary: 35 90% 55%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 270 70% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 195 85% 45%;
+
+    --radius: 0.75rem;
+    
+    /* حالات المهام */
+    --status-working: 45 93% 47%;
+    --status-waiting: 195 85% 45%;
+    --status-frozen: 215 16% 47%;
+    --status-completed: 142 71% 45%;
+    
+    /* أولويات */
+    --priority-high: 0 84% 60%;
+    --priority-medium: 35 90% 55%;
+    --priority-low: 142 71% 45%;
+    
+    /* تدرجات جميلة */
+    --gradient-primary: linear-gradient(135deg, hsl(195 85% 45%), hsl(195 85% 65%));
+    --gradient-secondary: linear-gradient(135deg, hsl(35 90% 55%), hsl(35 90% 70%));
+    --gradient-hero: linear-gradient(135deg, hsl(195 85% 45%) 0%, hsl(270 70% 50%) 100%);
+    
+    /* ظلال */
+    --shadow-card: 0 4px 6px -1px hsl(195 85% 45% / 0.1), 0 2px 4px -2px hsl(195 85% 45% / 0.1);
+    --shadow-hover: 0 10px 15px -3px hsl(195 85% 45% / 0.2), 0 4px 6px -4px hsl(195 85% 45% / 0.1);
+    
+    /* انتقالات سلسة */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* ألوان النظام الداكن */
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 10%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 195 85% 55%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 195 85% 65%;
+
+    --secondary: 35 90% 60%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 270 70% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 195 85% 55%;
+    
+    --status-working: 45 93% 57%;
+    --status-waiting: 195 85% 55%;
+    --status-frozen: 215 20% 65%;
+    --status-completed: 142 71% 55%;
+    
+    --priority-high: 0 84% 65%;
+    --priority-medium: 35 90% 60%;
+    --priority-low: 142 71% 55%;
+    
+    --gradient-primary: linear-gradient(135deg, hsl(195 85% 45%), hsl(195 85% 60%));
+    --gradient-secondary: linear-gradient(135deg, hsl(35 90% 50%), hsl(35 90% 65%));
+    --gradient-hero: linear-gradient(135deg, hsl(195 85% 45%) 0%, hsl(270 70% 50%) 100%);
+    
+    --shadow-card: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
+    --shadow-hover: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -4px hsl(0 0% 0% / 0.3);
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Tajawal', sans-serif;
+    direction: rtl;
+    /* منع تحديد النصوص أثناء السحب */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cairo', sans-serif;
+  }
+  
+  /* السماح بتحديد النصوص في حقول الإدخال فقط */
+  input, textarea, [contenteditable="true"] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+}
+
+@layer components {
+  /* Toast Styles */
+  .toast-success {
+    @apply !bg-[hsl(var(--status-completed))];
+  }
+  
+  .toast-error {
+    @apply !bg-[hsl(var(--destructive))];
+  }
+  
+  .toast-info {
+    @apply !bg-[hsl(var(--primary))];
+  }
+  
+  .toast-warning {
+    @apply !bg-[hsl(var(--status-working))];
+  }
+  
+  /* Scrollbar Styles */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-muted rounded;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/30 rounded hover:bg-primary/50;
+  }
+  
+  /* تحسين السحب والإفلات */
+  [data-rbd-draggable-context-id] {
+    cursor: grab !important;
+  }
+  
+  [data-rbd-draggable-context-id]:active {
+    cursor: grabbing !important;
+  }
+  
+  /* تصميم الجدول */
+  .task-table {
+    @apply w-full border-collapse;
+  }
+  
+  .task-table th {
+    @apply bg-muted/80 p-3 text-right font-semibold text-sm border-b-2 border-border;
+    font-family: 'Cairo', sans-serif;
+  }
+  
+  .task-table td {
+    @apply p-3 border-b border-border transition-colors;
+  }
+  
+  .task-table tr:hover td {
+    @apply bg-muted/30;
+  }
+  
+  .task-table tr.completed td {
+    @apply opacity-60;
+  }
+}
