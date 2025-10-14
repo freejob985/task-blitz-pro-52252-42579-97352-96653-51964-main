@@ -86,12 +86,24 @@ export function SubBoardManager({
         )}
       </div>
       
-      {hasSubBoards && !board.collapsed && (
+      {!board.collapsed && (
         <div className="mr-6 space-y-2 border-r-2 border-muted pr-3">
-          {subBoards.map((subBoard) => (
+          {hasSubBoards ? (
+            subBoards.map((subBoard) => (
             <div key={subBoard.id} className="p-3 border rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
               <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="font-cairo text-sm font-medium">{subBoard.title}</span>
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: subBoard.color || '#8b5cf6' }}
+                  />
+                  <span className="font-cairo text-sm font-medium">{subBoard.title}</span>
+                  {subBoard.description && (
+                    <span className="text-xs text-muted-foreground">
+                      - {subBoard.description}
+                    </span>
+                  )}
+                </div>
                 <div className="flex gap-1">
                   <Button
                     size="icon"
@@ -138,7 +150,13 @@ export function SubBoardManager({
                 </Button>
               </div>
             </div>
-          ))}
+            ))
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              <p className="text-sm">لا توجد أقسام فرعية</p>
+              <p className="text-xs mt-1">انقر على زر إضافة قسم فرعي لإنشاء قسم جديد</p>
+            </div>
+          )}
         </div>
       )}
     </div>

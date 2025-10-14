@@ -15,6 +15,8 @@ export interface FilterState {
   priority: Task['priority'][];
   tags: string[];
   boardId: string | null;
+  boardCategory: string | null;
+  showFavoritesOnly: boolean;
   overdue: boolean;
 }
 
@@ -42,6 +44,8 @@ export function SearchBar({
     filters.priority.length +
     filters.tags.length +
     (filters.boardId ? 1 : 0) +
+    (filters.boardCategory ? 1 : 0) +
+    (filters.showFavoritesOnly ? 1 : 0) +
     (filters.overdue ? 1 : 0);
 
   const handleStatusToggle = (status: Task['status']) => {
@@ -65,15 +69,35 @@ export function SearchBar({
     onFiltersChange({ ...filters, tags: newTags });
   };
 
+  const handleBoardCategoryChange = (category: string) => {
+    onFiltersChange({ 
+      ...filters, 
+      boardCategory: category === 'all' ? null : category,
+      boardId: null // Clear board selection when changing category
+    });
+  };
+
+  const handleFavoritesToggle = () => {
+    onFiltersChange({ 
+      ...filters, 
+      showFavoritesOnly: !filters.showFavoritesOnly 
+    });
+  };
+
   const handleClearFilters = () => {
     onFiltersChange({
       status: [],
       priority: [],
       tags: [],
       boardId: null,
+      boardCategory: null,
+      showFavoritesOnly: false,
       overdue: false,
     });
   };
+
+  const categories = [...new Set(boards.map(b => b.category).filter(Boolean))];
+  const favoriteBoards = boards.filter(b => b.isFavorite);
 
   return (
     <div className="flex gap-2 items-center">
@@ -142,14 +166,62 @@ export function SearchBar({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">كل الأقسام</SelectItem>
-                  {boards.map(board => (
+                  {(filters.showFavoritesOnly ? favoriteBoards : boards)
+                    .filter(board => !filters.boardCategory || board.category === filters.boardCategory)
+                    .map(board => (
                     <SelectItem key={board.id} value={board.id}>
-                      {board.title}
+                      <div className="flex items-center gap-2">
+                        {board.color && (
+                          <div 
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: board.color }}
+                          />
+                        )}
+                        <span>{board.title}</span>
+                        {board.isFavorite && <span>⭐</span>}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
+            {/* فلتر فئة القسم */}
+            {categories.length > 0 && (
+              <div className="space-y-2">
+                <Label>فئة القسم</Label>
+                <Select
+                  value={filters.boardCategory || 'all'}
+                  onValueChange={handleBoardCategoryChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">كل الفئات</SelectItem>
+                    {categories.map(category => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* فلتر المفضلة */}
+            {favoriteBoards.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="favorites-only"
+                  checked={filters.showFavoritesOnly}
+                  onCheckedChange={handleFavoritesToggle}
+                />
+                <Label htmlFor="favorites-only" className="cursor-pointer">
+                  الأقسام المفضلة فقط ({favoriteBoards.length})
+                </Label>
+              </div>
+            )}
 
             {/* فلتر الحالة */}
             <div className="space-y-2">

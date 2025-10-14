@@ -22,10 +22,18 @@ export interface Task {
 export interface Board {
   id: string;
   title: string;
+  description?: string;
   order: number;
   createdAt: string;
-  parentId?: string;
+  parentId?: string; // للدلالة على القسم الرئيسي
   collapsed?: boolean;
+  color?: string;
+  icon?: string;
+  isFavorite?: boolean;
+  isArchived?: boolean;
+  category?: string;
+  template?: string;
+  isSubBoard?: boolean; // للدلالة على أن هذا قسم فرعي
 }
 
 export interface FocusSession {

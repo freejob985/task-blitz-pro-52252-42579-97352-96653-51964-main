@@ -39,6 +39,8 @@ export default function Index() {
     priority: [],
     tags: [],
     boardId: null,
+    boardCategory: null,
+    showFavoritesOnly: false,
     overdue: false,
   });
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -108,6 +110,7 @@ export default function Index() {
     const { source, destination, type } = result;
 
     if (type === 'board') {
+      // سحب وإفلات الأقسام نفسها
       const newBoards = Array.from(boards);
       const [moved] = newBoards.splice(source.index, 1);
       newBoards.splice(destination.index, 0, moved);
@@ -115,22 +118,77 @@ export default function Index() {
       const updated = newBoards.map((b, i) => ({ ...b, order: i }));
       setBoards(updated);
       await Promise.all(updated.map(saveBoard));
-    } else {
+    } else if (type === 'task') {
+      // سحب وإفلات المهام
       const sourceBoardId = source.droppableId;
       const destBoardId = destination.droppableId;
       
-      const newTasks = Array.from(tasks);
-      const taskIndex = newTasks.findIndex(t => t.id === result.draggableId);
-      const [movedTask] = newTasks.splice(taskIndex, 1);
+      // إذا كان نفس القسم، فقط إعادة ترتيب
+      if (sourceBoardId === destBoardId) {
+        const boardTasks = tasks.filter(t => t.boardId === sourceBoardId);
+        const [movedTask] = boardTasks.splice(source.index, 1);
+        boardTasks.splice(destination.index, 0, movedTask);
+        
+        // تحديث ترتيب المهام
+        const updatedTasks = boardTasks.map((task, index) => ({
+          ...task,
+          order: index
+        }));
+        
+        // تحديث جميع المهام
+        const otherTasks = tasks.filter(t => t.boardId !== sourceBoardId);
+        const allTasks = [...otherTasks, ...updatedTasks];
+        
+        setTasks(allTasks);
+        await saveTasks(updatedTasks);
+        return;
+      }
       
-      movedTask.boardId = destBoardId;
+      // التحقق من أن الوجهة صالحة
+      const destBoard = boards.find(b => b.id === destBoardId);
+      if (!destBoard) {
+        showToast('القسم الوجهة غير موجود', 'error');
+        return;
+      }
       
+      // العثور على المهمة المراد نقلها
+      const taskToMove = tasks.find(t => t.id === result.draggableId);
+      if (!taskToMove) {
+        showToast('المهمة غير موجودة', 'error');
+        return;
+      }
+      
+      // إنشاء نسخة جديدة من المهام
+      const newTasks = tasks.map(task => {
+        if (task.id === result.draggableId) {
+          return {
+            ...task,
+            boardId: destBoardId,
+            order: destination.index
+          };
+        }
+        return task;
+      });
+      
+      // إعادة ترتيب المهام في القسم المصدر
+      const sourceTasks = newTasks.filter(t => t.boardId === sourceBoardId);
+      sourceTasks.forEach((task, index) => {
+        task.order = index;
+      });
+      
+      // إعادة ترتيب المهام في القسم الوجهة
       const destTasks = newTasks.filter(t => t.boardId === destBoardId);
-      destTasks.splice(destination.index, 0, movedTask);
-      destTasks.forEach((t, i) => t.order = i);
+      destTasks.forEach((task, index) => {
+        task.order = index;
+      });
       
-      setTasks([...newTasks.filter(t => t.boardId !== destBoardId), ...destTasks]);
-      await saveTasks(destTasks);
+      // تحديث المهام
+      setTasks(newTasks);
+      await saveTasks(newTasks);
+      
+      // تحديد نوع القسم الوجهة
+      const isSubBoard = destBoard.parentId ? 'قسم فرعي' : 'قسم رئيسي';
+      showToast(`تم نقل المهمة إلى ${destBoard.title} (${isSubBoard})`, 'success');
     }
   };
 
@@ -258,17 +316,39 @@ export default function Index() {
     showToast('تم أرشفة المهمة بنجاح', 'success');
   };
 
-  const handleAddSubBoard = async (parentId: string, title: string) => {
+  const handleAddBoard = async (boardData: Partial<Board>) => {
     const newBoard: Board = {
       id: `board-${Date.now()}`,
-      title,
+      title: boardData.title || 'قسم جديد',
+      description: boardData.description,
       order: boards.length,
       createdAt: new Date().toISOString(),
-      parentId,
+      parentId: boardData.parentId,
+      color: boardData.color || '#3b82f6',
+      icon: boardData.icon,
+      isFavorite: boardData.isFavorite || false,
+      isArchived: boardData.isArchived || false,
+      category: boardData.category || 'عام',
+      template: boardData.template,
     };
     setBoards([...boards, newBoard]);
     await saveBoard(newBoard);
-    showToast('تم إضافة القسم الفرعي', 'success');
+    showToast('تم إضافة القسم', 'success');
+  };
+
+  const handleAddSubBoard = async (parentId: string, title: string) => {
+    const newSubBoard: Board = {
+      id: `board-${Date.now()}`,
+      title,
+      order: boards.filter(b => b.parentId === parentId).length,
+      createdAt: new Date().toISOString(),
+      parentId,
+      isSubBoard: true,
+      color: '#8b5cf6', // لون مختلف للأقسام الفرعية
+    };
+    setBoards([...boards, newSubBoard]);
+    await saveBoard(newSubBoard);
+    showToast(`تم إضافة القسم الفرعي "${title}"`, 'success');
   };
 
   const handleToggleBoardCollapse = async (boardId: string) => {
@@ -277,6 +357,39 @@ export default function Index() {
       const updated = { ...board, collapsed: !board.collapsed };
       setBoards(boards.map(b => b.id === boardId ? updated : b));
       await saveBoard(updated);
+    }
+  };
+
+  const handleDuplicateBoard = async (board: Board) => {
+    const duplicatedBoard: Board = {
+      ...board,
+      id: `board-${Date.now()}`,
+      title: `${board.title} (نسخة)`,
+      createdAt: new Date().toISOString(),
+      order: boards.length,
+    };
+    setBoards([...boards, duplicatedBoard]);
+    await saveBoard(duplicatedBoard);
+    showToast('تم تكرار القسم', 'success');
+  };
+
+  const handleArchiveBoard = async (boardId: string) => {
+    const board = boards.find(b => b.id === boardId);
+    if (board) {
+      const updated = { ...board, isArchived: true };
+      setBoards(boards.map(b => b.id === boardId ? updated : b));
+      await saveBoard(updated);
+      showToast('تم أرشفة القسم', 'success');
+    }
+  };
+
+  const handleToggleFavorite = async (boardId: string) => {
+    const board = boards.find(b => b.id === boardId);
+    if (board) {
+      const updated = { ...board, isFavorite: !board.isFavorite };
+      setBoards(boards.map(b => b.id === boardId ? updated : b));
+      await saveBoard(updated);
+      showToast(updated.isFavorite ? 'تم إضافة للمفضلة' : 'تم إزالة من المفضلة', 'success');
     }
   };
 
@@ -380,6 +493,19 @@ export default function Index() {
     if (filters.tags.length && !filters.tags.some(tag => t.tags.includes(tag))) return false;
     if (filters.boardId && t.boardId !== filters.boardId) return false;
     if (filters.overdue && (!t.dueDate || new Date(t.dueDate) >= new Date() || t.status === 'completed')) return false;
+    
+    // Board category filter
+    if (filters.boardCategory) {
+      const taskBoard = boards.find(b => b.id === t.boardId);
+      if (!taskBoard || taskBoard.category !== filters.boardCategory) return false;
+    }
+    
+    // Favorites filter
+    if (filters.showFavoritesOnly) {
+      const taskBoard = boards.find(b => b.id === t.boardId);
+      if (!taskBoard || !taskBoard.isFavorite) return false;
+    }
+    
     return true;
   });
 
@@ -462,7 +588,7 @@ export default function Index() {
           <Droppable droppableId="boards" type="board" direction="vertical">
             {(provided) => (
               <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col gap-6">
-                {boards.filter(board => !board.parentId).map((board, index) => {
+                {boards.filter(board => !board.parentId && !board.isArchived).map((board, index) => {
                   const isFocused = focusedBoardId === board.id;
                   const isHidden = focusedBoardId && focusedBoardId !== board.id;
                   
@@ -473,7 +599,7 @@ export default function Index() {
                       key={board.id} 
                       board={board} 
                       boards={boards} 
-                      tasks={filteredTasks.filter(t => t.boardId === board.id).sort((a, b) => a.order - b.order)} 
+                      tasks={filteredTasks.sort((a, b) => a.order - b.order)} 
                       index={index} 
                       isFocused={isFocused}
                       onToggleFocus={(id) => setFocusedBoardId(focusedBoardId === id ? null : id)}
@@ -527,10 +653,13 @@ export default function Index() {
         open={boardManagerOpen} 
         onOpenChange={setBoardManagerOpen} 
         boards={boards} 
-        onAddBoard={handleAddSubBoard}
-        onEditBoard={async (b) => { const { value } = await Swal.fire({ title: 'تعديل القسم', input: 'text', inputValue: b.title, showCancelButton: true }); if (value) { const updated = boards.map(board => board.id === b.id ? { ...board, title: value } : board); setBoards(updated); await saveBoard({ ...b, title: value }); } }}
+        onAddBoard={handleAddBoard}
+        onEditBoard={async (b) => { const updated = boards.map(board => board.id === b.id ? b : board); setBoards(updated); await saveBoard(b); }}
         onDeleteBoard={async (id) => { const result = await Swal.fire({ title: 'حذف القسم؟', text: 'سيتم حذف جميع المهام فيه', icon: 'warning', showCancelButton: true, confirmButtonText: 'حذف', confirmButtonColor: '#ef4444' }); if (result.isConfirmed) { setBoards(boards.filter(b => b.id !== id)); setTasks(tasks.filter(t => t.boardId !== id)); await deleteBoard(id); } }}
         onToggleCollapse={handleToggleBoardCollapse}
+        onDuplicateBoard={handleDuplicateBoard}
+        onArchiveBoard={handleArchiveBoard}
+        onToggleFavorite={handleToggleFavorite}
       />
     </div>
   );
