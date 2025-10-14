@@ -123,12 +123,19 @@ export function BulkAddModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent 
+        className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" 
+        dir="rtl"
+        aria-describedby="bulk-add-description"
+      >
         <DialogHeader>
           <DialogTitle className="font-cairo text-2xl flex items-center gap-2">
             <Plus className="h-6 w-6" />
             إضافة مهام متعددة
           </DialogTitle>
+          <p id="bulk-add-description" className="text-sm text-muted-foreground">
+            أضف عدة مهام دفعة واحدة باستخدام النص أو ملف CSV
+          </p>
         </DialogHeader>
 
         <div className="space-y-4">

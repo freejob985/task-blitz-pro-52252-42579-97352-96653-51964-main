@@ -1,7 +1,7 @@
 // مكون بطاقة المهمة
 import { useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { MoreVertical, Calendar, Tag, Clock, Edit, Copy, Trash2, CheckCircle2, Pause, Clock3, AlertCircle } from 'lucide-react';
+import { MoreVertical, Calendar, Tag, Clock, Edit, Copy, Trash2, CheckCircle2, Pause, Clock3, AlertCircle, Archive } from 'lucide-react';
 import type { Task } from '@/types';
 import { Button } from './ui/button';
 import {
@@ -29,6 +29,7 @@ interface TaskCardProps {
   onDelete: (id: string) => void;
   onDuplicate: (task: Task) => void;
   onStatusChange: (id: string, status: Task['status']) => void;
+  onArchive: (id: string) => void;
 }
 
 export function TaskCard({
@@ -38,6 +39,7 @@ export function TaskCard({
   onDelete,
   onDuplicate,
   onStatusChange,
+  onArchive,
 }: TaskCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -134,6 +136,10 @@ export function TaskCard({
                   مكتمل
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => onArchive(task.id)}>
+                  <Archive className="ml-2 h-4 w-4" />
+                  أرشفة المهمة
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => onDelete(task.id)}
                   className="text-destructive focus:text-destructive"
@@ -244,6 +250,14 @@ export function TaskCard({
         </ContextMenuItem>
         
         <ContextMenuSeparator />
+        
+        <ContextMenuItem 
+          onClick={() => onArchive(task.id)} 
+          className="font-tajawal cursor-pointer"
+        >
+          <Archive className="ml-2 h-4 w-4" />
+          <span>أرشفة المهمة</span>
+        </ContextMenuItem>
         
         <ContextMenuItem 
           onClick={() => onDelete(task.id)} 

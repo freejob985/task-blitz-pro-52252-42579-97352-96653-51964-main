@@ -224,6 +224,80 @@ export function BoardColumn({
             </div>
           )}
 
+          {/* عرض الأقسام الفرعية */}
+          {!board.parentId && (
+            <div className="space-y-4">
+              {boards
+                .filter(subBoard => subBoard.parentId === board.id)
+                .map(subBoard => {
+                  const subBoardTasks = tasks.filter(t => t.boardId === subBoard.id);
+                  return (
+                    <div key={subBoard.id} className="border border-muted rounded-lg p-4 bg-muted/30">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-cairo font-semibold text-lg text-muted-foreground">
+                          {subBoard.title}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            {subBoardTasks.length} مهمة
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onAddTask(subBoard.id)}
+                            className="h-7 px-2"
+                          >
+                            <Plus className="h-3 w-3 ml-1" />
+                            مهمة
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onBulkAdd(subBoard.id)}
+                            className="h-7 px-2"
+                          >
+                            <Layers className="h-3 w-3 ml-1" />
+                            متعددة
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <Droppable droppableId={subBoard.id} type="task">
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            className={cn(
+                              'min-h-[100px] rounded-lg transition-all duration-300',
+                              snapshot.isDraggingOver && 'bg-primary/10 ring-2 ring-primary/30'
+                            )}
+                          >
+                            <TaskTable
+                              tasks={subBoardTasks}
+                              boards={boards}
+                              onEdit={onEditTask}
+                              onDelete={onDeleteTask}
+                              onDuplicate={onDuplicateTask}
+                              onStatusChange={onTaskStatusChange}
+                              onToggleComplete={(id) => {
+                                const task = subBoardTasks.find(t => t.id === id);
+                                if (task) {
+                                  onTaskStatusChange(id, task.status === 'completed' ? 'waiting' : 'completed');
+                                }
+                              }}
+                              onMoveToBoard={onMoveToBoard}
+                              onArchive={onArchiveTask}
+                            />
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
           {/* محتوى القسم القابل للطي */}
           <Collapsible open={!isCollapsed}>
             <CollapsibleContent className="space-y-4">

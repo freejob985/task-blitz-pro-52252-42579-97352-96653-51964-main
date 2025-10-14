@@ -98,11 +98,18 @@ export function TaskEditModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent 
+        className="sm:max-w-lg max-h-[90vh] overflow-y-auto" 
+        dir="rtl"
+        aria-describedby="task-edit-description"
+      >
         <DialogHeader>
           <DialogTitle className="font-cairo text-2xl">
             {task ? 'تعديل المهمة' : 'إضافة مهمة جديدة'}
           </DialogTitle>
+          <p id="task-edit-description" className="text-sm text-muted-foreground">
+            {task ? 'قم بتعديل تفاصيل المهمة المحددة' : 'أضف مهمة جديدة مع تفاصيلها'}
+          </p>
         </DialogHeader>
 
         <div className="space-y-4">

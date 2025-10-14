@@ -72,15 +72,23 @@ export function TaskTable({
 
   if (tasks.length === 0) {
     return (
-      <div className="flex items-center justify-center h-32 text-muted-foreground text-sm bg-muted/20 rounded-lg">
-        لا توجد مهام في هذا القسم
+      <div className="overflow-x-auto rounded-xl border-2 border-border/50 bg-card shadow-sm">
+        <table className="task-table w-full">
+          <tbody>
+            <tr>
+              <td colSpan={7} className="text-center py-8 text-muted-foreground text-sm bg-muted/20">
+                لا توجد مهام في هذا القسم
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     );
   }
 
   return (
     <div className="overflow-x-auto rounded-xl border-2 border-border/50 bg-card shadow-sm">
-      <table className="task-table">
+      <table className="task-table w-full">
         <thead>
           <tr className="bg-gradient-to-l from-primary/5 to-accent/5">
             <th className="w-16 text-center">

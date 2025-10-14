@@ -96,12 +96,19 @@ export function BoardManager({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh]" dir="rtl">
+      <DialogContent 
+        className="sm:max-w-2xl max-h-[90vh]" 
+        dir="rtl"
+        aria-describedby="board-manager-description"
+      >
         <DialogHeader>
           <DialogTitle className="font-cairo text-2xl flex items-center gap-2">
             <FolderTree className="h-6 w-6" />
             إدارة الأقسام ({boards.length})
           </DialogTitle>
+          <p id="board-manager-description" className="text-sm text-muted-foreground">
+            قم بإنشاء وتعديل وحذف الأقسام الرئيسية والفرعية
+          </p>
         </DialogHeader>
 
         <div className="space-y-6">

@@ -154,12 +154,19 @@ export function ImportModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent 
+        className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" 
+        dir="rtl"
+        aria-describedby="import-description"
+      >
         <DialogHeader>
           <DialogTitle className="font-cairo text-2xl flex items-center gap-2">
             <Upload className="h-6 w-6" />
             استيراد المهام
           </DialogTitle>
+          <p id="import-description" className="text-sm text-muted-foreground">
+            استيراد المهام من ملف JSON أو CSV
+          </p>
         </DialogHeader>
 
         <div className="space-y-4">

@@ -121,12 +121,19 @@ export function StatusManagement({ open, onOpenChange, onStatusesChange }: Statu
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl" dir="rtl">
+      <DialogContent 
+        className="sm:max-w-2xl" 
+        dir="rtl"
+        aria-describedby="status-management-description"
+      >
         <DialogHeader>
           <DialogTitle className="font-cairo text-2xl flex items-center gap-2">
             <Settings className="h-6 w-6" />
             إدارة الحالات
           </DialogTitle>
+          <p id="status-management-description" className="text-sm text-muted-foreground">
+            تخصيص ألوان وتسميات حالات المهام
+          </p>
         </DialogHeader>
 
         <div className="space-y-4">

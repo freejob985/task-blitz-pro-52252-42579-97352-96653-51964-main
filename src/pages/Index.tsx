@@ -254,6 +254,7 @@ export default function Index() {
     await archiveTask(taskId);
     const updatedTasks = tasks.filter(t => t.id !== taskId);
     setTasks(updatedTasks);
+    await playSound('archive');
     showToast('تم أرشفة المهمة بنجاح', 'success');
   };
 
@@ -461,7 +462,7 @@ export default function Index() {
           <Droppable droppableId="boards" type="board" direction="vertical">
             {(provided) => (
               <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col gap-6">
-                {boards.map((board, index) => {
+                {boards.filter(board => !board.parentId).map((board, index) => {
                   const isFocused = focusedBoardId === board.id;
                   const isHidden = focusedBoardId && focusedBoardId !== board.id;
                   

@@ -279,13 +279,20 @@ export function FocusTimer({ open, onOpenChange }: FocusTimerProps) {
       />
       
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="font-cairo text-2xl flex items-center gap-2">
-            <Timer className="h-6 w-6" />
-            مؤقت التركيز
-          </DialogTitle>
-        </DialogHeader>
+        <DialogContent 
+          className="sm:max-w-md" 
+          dir="rtl"
+          aria-describedby="focus-timer-description"
+        >
+          <DialogHeader>
+            <DialogTitle className="font-cairo text-2xl flex items-center gap-2">
+              <Timer className="h-6 w-6" />
+              مؤقت التركيز
+            </DialogTitle>
+            <p id="focus-timer-description" className="text-sm text-muted-foreground">
+              استخدم مؤقت بومودورو لتحسين إنتاجيتك
+            </p>
+          </DialogHeader>
 
         <div className="space-y-6">
           {/* اختيار النمط */}

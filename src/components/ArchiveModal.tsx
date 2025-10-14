@@ -163,12 +163,19 @@ ${task.description ? `الوصف: ${task.description}\n` : ''}${task.tags.length
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]" dir="rtl">
+      <DialogContent 
+        className="max-w-4xl max-h-[90vh]" 
+        dir="rtl"
+        aria-describedby="archive-description"
+      >
         <DialogHeader>
           <DialogTitle className="font-cairo text-2xl flex items-center gap-2">
             <Archive className="h-6 w-6" />
             الأرشيف ({archivedTasks.length})
           </DialogTitle>
+          <p id="archive-description" className="text-sm text-muted-foreground">
+            عرض وإدارة المهام المؤرشفة
+          </p>
           
           {archivedTasks.length > 0 && (
             <div className="flex items-center gap-2 pt-2">

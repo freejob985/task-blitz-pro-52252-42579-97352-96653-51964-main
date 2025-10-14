@@ -120,12 +120,19 @@ export function ExportModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg" dir="rtl">
+      <DialogContent 
+        className="sm:max-w-lg" 
+        dir="rtl"
+        aria-describedby="export-description"
+      >
         <DialogHeader>
           <DialogTitle className="font-cairo text-2xl flex items-center gap-2">
             <Download className="h-6 w-6" />
             تصدير ونسخ المهام
           </DialogTitle>
+          <p id="export-description" className="text-sm text-muted-foreground">
+            تصدير المهام إلى ملف JSON أو CSV أو نسخها للحافظة
+          </p>
         </DialogHeader>
 
         <div className="space-y-4">
