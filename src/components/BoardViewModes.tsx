@@ -774,17 +774,49 @@ export function KanbanView(props: DefaultViewProps) {
 
 // مكون عرض الجدول
 export function TableView(props: DefaultViewProps) {
+  const [showMainSections, setShowMainSections] = useState(true);
+  const [showSubSections, setShowSubSections] = useState(true);
+  const [showAllTasks, setShowAllTasks] = useState(true);
+
   return (
     <div className="space-y-16 p-4">
+      {/* أزرار التحكم في العرض */}
+      <div className="flex items-center justify-center gap-4 p-4 bg-muted/30 rounded-xl">
+        <Button
+          variant={showMainSections ? "default" : "outline"}
+          onClick={() => setShowMainSections(!showMainSections)}
+          className="gap-2"
+        >
+          <FolderTree className="h-4 w-4" />
+          الأقسام الرئيسية
+        </Button>
+        <Button
+          variant={showSubSections ? "default" : "outline"}
+          onClick={() => setShowSubSections(!showSubSections)}
+          className="gap-2"
+        >
+          <Layers className="h-4 w-4" />
+          الأقسام الفرعية
+        </Button>
+        <Button
+          variant={showAllTasks ? "default" : "outline"}
+          onClick={() => setShowAllTasks(!showAllTasks)}
+          className="gap-2"
+        >
+          <CheckCircle className="h-4 w-4" />
+          جميع المهام
+        </Button>
+      </div>
       {/* جدول الأقسام الرئيسية */}
-      <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg overflow-hidden">
-        <div className="p-6 border-b border-border/30 bg-gradient-to-r from-primary/5 to-accent/5">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <FolderTree className="h-5 w-5 text-primary" />
+      {showMainSections && (
+        <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-primary/30 shadow-xl overflow-hidden ring-2 ring-primary/10">
+        <div className="p-8 border-b border-primary/20 bg-gradient-to-r from-primary/10 to-accent/10">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-primary/20 rounded-xl ring-2 ring-primary/20">
+              <FolderTree className="h-6 w-6 text-primary" />
             </div>
-            <h3 className="font-bold text-2xl text-foreground">الأقسام الرئيسية</h3>
-            <Badge variant="outline" className="text-sm">
+            <h3 className="font-bold text-3xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">الأقسام الرئيسية</h3>
+            <Badge variant="outline" className="text-base px-4 py-2 border-primary/30 bg-primary/5">
               {props.boards.filter(board => !board.parentId).length} قسم رئيسي
             </Badge>
           </div>
@@ -810,16 +842,22 @@ export function TableView(props: DefaultViewProps) {
                   const progress = boardTasks.length > 0 ? (completedCount / boardTasks.length) * 100 : 0;
 
                   return (
-                    <tr key={board.id} className="border-t border-border/30 hover:bg-muted/30 transition-all duration-200">
+                    <tr key={board.id} className="border-t border-primary/20 hover:bg-primary/5 transition-all duration-200">
                       <td className="p-6">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="p-1 bg-primary/10 rounded-lg ring-1 ring-primary/20">
+                            <FolderTree className="h-4 w-4 text-primary" />
+                          </div>
                           {board.color && (
                             <div 
-                              className="w-3 h-3 rounded-full"
+                              className="w-4 h-4 rounded-full ring-2 ring-primary/20"
                               style={{ backgroundColor: board.color }}
                             />
                           )}
-                          <span className="font-medium">{board.title}</span>
+                          <span className="font-semibold text-lg text-primary">{board.title}</span>
+                          <Badge variant="outline" className="text-xs px-2 py-1 border-primary/30 bg-primary/5">
+                            رئيسي
+                          </Badge>
                         </div>
                       </td>
                       <td className="p-3 text-sm text-muted-foreground">
@@ -879,26 +917,27 @@ export function TableView(props: DefaultViewProps) {
           </table>
         </div>
       </div>
+      )}
 
       {/* خط فاصل بصري مع تباعد أكبر */}
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-16">
         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
-        <div className="px-8 py-3 bg-gradient-to-r from-accent/10 to-primary/10 rounded-full border-2 border-accent/30 shadow-lg">
-          <span className="text-base font-bold text-accent">الأقسام الفرعية</span>
+        <div className="px-8 py-4 bg-gradient-to-r from-accent/10 to-primary/10 rounded-full border-2 border-accent/30 shadow-lg">
+          <span className="text-lg font-bold text-accent">الأقسام الفرعية</span>
         </div>
         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
       </div>
 
       {/* جدول الأقسام الفرعية */}
-      {props.boards.filter(board => board.parentId).length > 0 && (
-        <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg overflow-hidden mt-16">
-          <div className="p-6 border-b border-border/30 bg-gradient-to-r from-accent/5 to-primary/5">
+      {showSubSections && props.boards.filter(board => board.parentId).length > 0 && (
+        <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-accent/30 shadow-lg overflow-hidden mt-20">
+          <div className="p-6 border-b border-accent/20 bg-gradient-to-r from-accent/10 to-primary/5">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-accent/10 rounded-lg">
+              <div className="p-2 bg-accent/20 rounded-lg ring-1 ring-accent/30">
                 <Layers className="h-5 w-5 text-accent" />
               </div>
-              <h3 className="font-bold text-2xl text-foreground">الأقسام الفرعية</h3>
-              <Badge variant="outline" className="text-sm">
+              <h3 className="font-bold text-2xl bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">الأقسام الفرعية</h3>
+              <Badge variant="outline" className="text-sm px-3 py-1 border-accent/30 bg-accent/5">
                 {props.boards.filter(board => board.parentId).length} قسم فرعي
               </Badge>
             </div>
@@ -926,16 +965,22 @@ export function TableView(props: DefaultViewProps) {
                     const parentBoard = props.boards.find(b => b.id === board.parentId);
 
                     return (
-                      <tr key={board.id} className="border-t border-border/30 hover:bg-muted/30 transition-all duration-200">
+                      <tr key={board.id} className="border-t border-accent/20 hover:bg-accent/5 transition-all duration-200">
                         <td className="p-6">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3">
+                            <div className="p-1 bg-accent/10 rounded-lg ring-1 ring-accent/20">
+                              <Layers className="h-4 w-4 text-accent" />
+                            </div>
                             {board.color && (
                               <div 
-                                className="w-3 h-3 rounded-full"
+                                className="w-4 h-4 rounded-full ring-2 ring-accent/20"
                                 style={{ backgroundColor: board.color }}
                               />
                             )}
-                            <span className="font-medium">{board.title}</span>
+                            <span className="font-semibold text-lg text-accent">{board.title}</span>
+                            <Badge variant="outline" className="text-xs px-2 py-1 border-accent/30 bg-accent/5">
+                              فرعي
+                            </Badge>
                           </div>
                         </td>
                         <td className="p-3 text-sm text-muted-foreground">
@@ -1010,7 +1055,8 @@ export function TableView(props: DefaultViewProps) {
       </div>
 
       {/* جدول المهام */}
-      <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg overflow-hidden">
+      {showAllTasks && (
+        <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg overflow-hidden">
         <div className="p-6 border-b border-border/30 bg-gradient-to-r from-primary/5 to-accent/5">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -1039,27 +1085,35 @@ export function TableView(props: DefaultViewProps) {
                 const board = props.boards.find(b => b.id === task.boardId);
                 return (
                   <tr key={task.id} className="border-t hover:bg-muted/50 transition-colors">
-                    <td className="p-3">
-                      <div className="flex items-center gap-2">
+                    <td className="p-4">
+                      <div className="flex items-center gap-4">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             props.onTaskStatusChange(task.id, task.status === 'completed' ? 'waiting' : 'completed');
                           }}
-                          className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                          className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all duration-200 hover:scale-110 ${
                             task.status === 'completed' 
-                              ? 'bg-green-500 border-green-500 text-white' 
-                              : 'border-gray-300 hover:border-green-500'
+                              ? 'bg-green-500 border-green-500 text-white shadow-lg' 
+                              : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
                           }`}
                         >
                           {task.status === 'completed' && '✓'}
                         </button>
-                        <div>
-                          <div className={`font-medium text-sm ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
+                        <div className="flex-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              props.onTaskStatusChange(task.id, task.status === 'completed' ? 'waiting' : 'completed');
+                            }}
+                            className={`font-medium text-base cursor-pointer hover:text-primary transition-colors duration-200 select-text ${
+                              task.status === 'completed' ? 'line-through text-muted-foreground' : ''
+                            }`}
+                          >
                             {task.title}
-                          </div>
+                          </button>
                           {task.description && (
-                            <div className="text-xs text-muted-foreground truncate max-w-xs">
+                            <div className="text-xs text-muted-foreground truncate max-w-xs mt-1">
                               {task.description}
                             </div>
                           )}
@@ -1141,6 +1195,7 @@ export function TableView(props: DefaultViewProps) {
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -119,25 +119,26 @@ export function TaskTable({
                     snapshot.isDragging && 'shadow-2xl bg-gradient-to-r from-primary/10 to-accent/10 scale-[1.02]'
                   )}
                 >
-                  <td className="text-center">
+                  <td className="text-center p-4">
                     <div className="flex items-center justify-center">
                       <Checkbox
                         checked={task.status === 'completed'}
                         onCheckedChange={() => onToggleComplete(task.id)}
-                        className="scale-125 data-[state=checked]:bg-status-completed data-[state=checked]:border-status-completed"
+                        className="scale-150 data-[state=checked]:bg-status-completed data-[state=checked]:border-status-completed"
                       />
                     </div>
                   </td>
-                  <td>
-                    <div className="flex flex-col gap-1">
-                      <span
+                  <td className="p-4">
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => onToggleComplete(task.id)}
                         className={cn(
-                          'font-medium',
-                          task.status === 'completed' && 'line-through'
+                          'font-medium text-left cursor-pointer hover:text-primary transition-colors duration-200 select-text text-base',
+                          task.status === 'completed' && 'line-through text-muted-foreground'
                         )}
                       >
                         {task.title}
-                      </span>
+                      </button>
                       {task.description && (
                         <span className="text-xs text-muted-foreground line-clamp-1">
                           {task.description}

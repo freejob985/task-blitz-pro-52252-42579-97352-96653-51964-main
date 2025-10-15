@@ -237,7 +237,7 @@ export function QuickAddMode({
 
   return (
     <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="w-full max-w-6xl max-h-[95vh] overflow-hidden">
         <Card className="h-full flex flex-col">
           <CardHeader className="flex-shrink-0 border-b">
             <div className="flex items-center justify-between">
@@ -325,9 +325,9 @@ export function QuickAddMode({
                               إضافة سطر
                             </Button>
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             {taskTitles.map((title, index) => (
-                              <div key={index} className="flex gap-2">
+                              <div key={index} className="flex gap-3">
                                 <Input
                                   value={title}
                                   onChange={(e) => updateTaskTitle(index, e.target.value)}
@@ -336,9 +336,20 @@ export function QuickAddMode({
                                       e.preventDefault();
                                       handleAddMultipleTasks();
                                     }
+                                    if (e.key === 'ArrowUp' && index > 0) {
+                                      e.preventDefault();
+                                      const prevInput = document.querySelector(`input[data-index="${index - 1}"]`) as HTMLInputElement;
+                                      prevInput?.focus();
+                                    }
+                                    if (e.key === 'ArrowDown' && index < taskTitles.length - 1) {
+                                      e.preventDefault();
+                                      const nextInput = document.querySelector(`input[data-index="${index + 1}"]`) as HTMLInputElement;
+                                      nextInput?.focus();
+                                    }
                                   }}
                                   placeholder={`مهمة ${index + 1}...`}
-                                  className="text-right flex-1"
+                                  className="text-right flex-1 h-12 text-lg"
+                                  data-index={index}
                                 />
                                 {taskTitles.length > 1 && (
                                   <Button
@@ -346,9 +357,9 @@ export function QuickAddMode({
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => removeTaskInput(index)}
-                                    className="text-destructive hover:text-destructive"
+                                    className="text-destructive hover:text-destructive h-12 w-12"
                                   >
-                                    <X className="h-4 w-4" />
+                                    <X className="h-5 w-5" />
                                   </Button>
                                 )}
                               </div>
@@ -357,7 +368,7 @@ export function QuickAddMode({
                         </div>
                       ) : (
                         <div>
-                          <label className="text-sm font-medium mb-2 block">عنوان المهمة *</label>
+                          <label className="text-lg font-semibold mb-3 block">عنوان المهمة *</label>
                           <Input
                             value={taskTitle}
                             onChange={(e) => setTaskTitle(e.target.value)}
@@ -368,21 +379,11 @@ export function QuickAddMode({
                               }
                             }}
                             placeholder="أدخل عنوان المهمة..."
-                            className="text-right"
+                            className="text-right h-14 text-xl"
                           />
                         </div>
                       )}
                       
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">وصف المهمة</label>
-                        <Textarea
-                          value={taskDescription}
-                          onChange={(e) => setTaskDescription(e.target.value)}
-                          placeholder="أدخل وصف المهمة (اختياري)..."
-                          className="text-right"
-                          rows={3}
-                        />
-                      </div>
 
                       <div>
                         <label className="text-sm font-medium mb-2 block">القسم *</label>
@@ -452,9 +453,9 @@ export function QuickAddMode({
                               إضافة سطر
                             </Button>
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             {boardTitles.map((title, index) => (
-                              <div key={index} className="flex gap-2">
+                              <div key={index} className="flex gap-3">
                                 <Input
                                   value={title}
                                   onChange={(e) => updateBoardTitle(index, e.target.value)}
@@ -463,9 +464,20 @@ export function QuickAddMode({
                                       e.preventDefault();
                                       handleAddMultipleBoards();
                                     }
+                                    if (e.key === 'ArrowUp' && index > 0) {
+                                      e.preventDefault();
+                                      const prevInput = document.querySelector(`input[data-board-index="${index - 1}"]`) as HTMLInputElement;
+                                      prevInput?.focus();
+                                    }
+                                    if (e.key === 'ArrowDown' && index < boardTitles.length - 1) {
+                                      e.preventDefault();
+                                      const nextInput = document.querySelector(`input[data-board-index="${index + 1}"]`) as HTMLInputElement;
+                                      nextInput?.focus();
+                                    }
                                   }}
                                   placeholder={`قسم ${index + 1}...`}
-                                  className="text-right flex-1"
+                                  className="text-right flex-1 h-12 text-lg"
+                                  data-board-index={index}
                                 />
                                 {boardTitles.length > 1 && (
                                   <Button
@@ -473,9 +485,9 @@ export function QuickAddMode({
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => removeBoardInput(index)}
-                                    className="text-destructive hover:text-destructive"
+                                    className="text-destructive hover:text-destructive h-12 w-12"
                                   >
-                                    <X className="h-4 w-4" />
+                                    <X className="h-5 w-5" />
                                   </Button>
                                 )}
                               </div>
@@ -484,7 +496,7 @@ export function QuickAddMode({
                         </div>
                       ) : (
                         <div>
-                          <label className="text-sm font-medium mb-2 block">اسم القسم *</label>
+                          <label className="text-lg font-semibold mb-3 block">اسم القسم *</label>
                           <Input
                             value={boardTitle}
                             onChange={(e) => setBoardTitle(e.target.value)}
@@ -495,21 +507,11 @@ export function QuickAddMode({
                               }
                             }}
                             placeholder="أدخل اسم القسم..."
-                            className="text-right"
+                            className="text-right h-14 text-xl"
                           />
                         </div>
                       )}
                       
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">وصف القسم</label>
-                        <Textarea
-                          value={boardDescription}
-                          onChange={(e) => setBoardDescription(e.target.value)}
-                          placeholder="أدخل وصف القسم (اختياري)..."
-                          className="text-right"
-                          rows={3}
-                        />
-                      </div>
 
                       <div>
                         <label className="text-sm font-medium mb-2 block">لون القسم</label>
@@ -560,9 +562,9 @@ export function QuickAddMode({
                               إضافة سطر
                             </Button>
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             {subBoardTitles.map((title, index) => (
-                              <div key={index} className="flex gap-2">
+                              <div key={index} className="flex gap-3">
                                 <Input
                                   value={title}
                                   onChange={(e) => updateSubBoardTitle(index, e.target.value)}
@@ -571,9 +573,20 @@ export function QuickAddMode({
                                       e.preventDefault();
                                       handleAddMultipleSubBoards();
                                     }
+                                    if (e.key === 'ArrowUp' && index > 0) {
+                                      e.preventDefault();
+                                      const prevInput = document.querySelector(`input[data-subboard-index="${index - 1}"]`) as HTMLInputElement;
+                                      prevInput?.focus();
+                                    }
+                                    if (e.key === 'ArrowDown' && index < subBoardTitles.length - 1) {
+                                      e.preventDefault();
+                                      const nextInput = document.querySelector(`input[data-subboard-index="${index + 1}"]`) as HTMLInputElement;
+                                      nextInput?.focus();
+                                    }
                                   }}
                                   placeholder={`قسم فرعي ${index + 1}...`}
-                                  className="text-right flex-1"
+                                  className="text-right flex-1 h-12 text-lg"
+                                  data-subboard-index={index}
                                 />
                                 {subBoardTitles.length > 1 && (
                                   <Button
@@ -581,9 +594,9 @@ export function QuickAddMode({
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => removeSubBoardInput(index)}
-                                    className="text-destructive hover:text-destructive"
+                                    className="text-destructive hover:text-destructive h-12 w-12"
                                   >
-                                    <X className="h-4 w-4" />
+                                    <X className="h-5 w-5" />
                                   </Button>
                                 )}
                               </div>
@@ -592,7 +605,7 @@ export function QuickAddMode({
                         </div>
                       ) : (
                         <div>
-                          <label className="text-sm font-medium mb-2 block">اسم القسم الفرعي *</label>
+                          <label className="text-lg font-semibold mb-3 block">اسم القسم الفرعي *</label>
                           <Input
                             value={subBoardTitle}
                             onChange={(e) => setSubBoardTitle(e.target.value)}
@@ -603,7 +616,7 @@ export function QuickAddMode({
                               }
                             }}
                             placeholder="أدخل اسم القسم الفرعي..."
-                            className="text-right"
+                            className="text-right h-14 text-xl"
                           />
                         </div>
                       )}
