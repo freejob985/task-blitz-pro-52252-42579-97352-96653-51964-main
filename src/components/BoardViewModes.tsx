@@ -494,44 +494,80 @@ export function CalendarView(props: DefaultViewProps) {
           const isToday = day === today.getDate() && currentMonth === today.getMonth();
           
           return (
-            <div
-              key={day}
-              className={cn(
-                "h-20 p-1 border rounded-lg hover:bg-muted/50 transition-colors",
-                isToday && "bg-primary/10 border-primary"
+            <Droppable key={day} droppableId={`calendar-${dateKey}`} type="task">
+              {(provided, snapshot) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className={cn(
+                    "h-20 p-1 border rounded-lg hover:bg-muted/50 transition-colors relative",
+                    isToday && "bg-primary/10 border-primary",
+                    snapshot.isDraggingOver && "bg-accent/10 border-accent ring-2 ring-accent/30"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={cn(
+                      "text-sm font-medium",
+                      isToday && "text-primary font-bold"
+                    )}>
+                      {day}
+                    </span>
+                    {dayTasks.length > 0 && (
+                      <Badge variant="secondary" className="text-xs h-5 px-1">
+                        {dayTasks.length}
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-1">
+                    {dayTasks.slice(0, 2).map((task, taskIndex) => (
+                      <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className={cn(
+                              "text-xs p-1 rounded truncate cursor-pointer transition-all duration-200",
+                              task.status === 'completed' ? 'bg-green-100 text-green-800 line-through' : 
+                              task.status === 'working' ? 'bg-blue-100 text-blue-800' : 'bg-primary/10 text-primary',
+                              snapshot.isDragging && 'rotate-1 scale-105 shadow-lg'
+                            )}
+                            title={`${task.title} - ${task.status === 'completed' ? 'مكتملة' : 
+                                   task.status === 'working' ? 'قيد التنفيذ' : 'في الانتظار'}`}
+                            onClick={() => props.onEditTask(task)}
+                          >
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  props.onTaskStatusChange(task.id, task.status === 'completed' ? 'waiting' : 'completed');
+                                }}
+                                className={cn(
+                                  "w-3 h-3 rounded border flex items-center justify-center text-xs",
+                                  task.status === 'completed' 
+                                    ? 'bg-green-500 border-green-500 text-white' 
+                                    : 'border-gray-300 hover:border-green-500'
+                                )}
+                              >
+                                {task.status === 'completed' && '✓'}
+                              </button>
+                              <span className="truncate">{task.title}</span>
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {dayTasks.length > 2 && (
+                      <div className="text-xs text-muted-foreground">
+                        +{dayTasks.length - 2} أخرى
+                      </div>
+                    )}
+                    {provided.placeholder}
+                  </div>
+                </div>
               )}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className={cn(
-                  "text-sm font-medium",
-                  isToday && "text-primary font-bold"
-                )}>
-                  {day}
-                </span>
-                {dayTasks.length > 0 && (
-                  <Badge variant="secondary" className="text-xs h-5 px-1">
-                    {dayTasks.length}
-                  </Badge>
-                )}
-              </div>
-              
-              <div className="space-y-1">
-                {dayTasks.slice(0, 2).map(task => (
-                  <div
-                    key={task.id}
-                    className="text-xs p-1 bg-primary/10 rounded truncate"
-                    title={task.title}
-                  >
-                    {task.title}
-                  </div>
-                ))}
-                {dayTasks.length > 2 && (
-                  <div className="text-xs text-muted-foreground">
-                    +{dayTasks.length - 2} أخرى
-                  </div>
-                )}
-              </div>
-            </div>
+            </Droppable>
           );
         })}
       </div>
@@ -563,7 +599,7 @@ export function KanbanView(props: DefaultViewProps) {
                   {statusTasks.length} مهمة
                 </Badge>
               </div>
-              <Droppable droppableId={status} type="task">
+              <Droppable droppableId={`kanban-${status}`} type="task">
                 {(provided, snapshot) => (
                   <div
                     ref={provided.innerRef}
@@ -654,8 +690,11 @@ export function KanbanView(props: DefaultViewProps) {
 export function TableView(props: DefaultViewProps) {
   return (
     <div className="space-y-8 p-4">
-      {/* جدول الأقسام */}
+      {/* جدول الأقسام الرئيسية */}
       <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg overflow-hidden">
+        <div className="p-4 border-b border-border/30">
+          <h3 className="font-bold text-xl text-foreground">الأقسام الرئيسية</h3>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gradient-to-r from-muted/60 to-muted/40">
@@ -746,6 +785,109 @@ export function TableView(props: DefaultViewProps) {
           </table>
         </div>
       </div>
+
+      {/* جدول الأقسام الفرعية */}
+      {props.boards.filter(board => board.parentId).length > 0 && (
+        <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg overflow-hidden">
+          <div className="p-4 border-b border-border/30">
+            <h3 className="font-bold text-xl text-foreground">الأقسام الفرعية</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gradient-to-r from-muted/60 to-muted/40">
+                <tr>
+                  <th className="text-right p-6 text-base font-bold text-foreground">القسم الفرعي</th>
+                  <th className="text-right p-6 text-base font-bold text-foreground">القسم الرئيسي</th>
+                  <th className="text-right p-6 text-base font-bold text-foreground">الوصف</th>
+                  <th className="text-right p-6 text-base font-bold text-foreground">المهام</th>
+                  <th className="text-right p-6 text-base font-bold text-foreground">المكتملة</th>
+                  <th className="text-right p-6 text-base font-bold text-foreground">التقدم</th>
+                  <th className="text-right p-6 text-base font-bold text-foreground">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {props.boards
+                  .filter(board => board.parentId)
+                  .map((board) => {
+                    const boardTasks = props.tasks.filter(t => t.boardId === board.id);
+                    const completedCount = boardTasks.filter(t => t.status === 'completed').length;
+                    const progress = boardTasks.length > 0 ? (completedCount / boardTasks.length) * 100 : 0;
+                    const parentBoard = props.boards.find(b => b.id === board.parentId);
+
+                    return (
+                      <tr key={board.id} className="border-t border-border/30 hover:bg-muted/30 transition-all duration-200">
+                        <td className="p-6">
+                          <div className="flex items-center gap-2">
+                            {board.color && (
+                              <div 
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: board.color }}
+                              />
+                            )}
+                            <span className="font-medium">{board.title}</span>
+                          </div>
+                        </td>
+                        <td className="p-3 text-sm text-muted-foreground">
+                          {parentBoard?.title || '-'}
+                        </td>
+                        <td className="p-3 text-sm text-muted-foreground">
+                          {board.description || '-'}
+                        </td>
+                        <td className="p-3 text-center">
+                          <Badge variant="secondary">{boardTasks.length}</Badge>
+                        </td>
+                        <td className="p-3 text-center">
+                          <Badge variant="outline">{completedCount}</Badge>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-accent transition-all duration-300"
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground w-8">
+                              {Math.round(progress)}%
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs px-2"
+                              onClick={() => props.onAddTask(board.id)}
+                            >
+                              إضافة
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2"
+                              onClick={() => props.onEditBoard(board)}
+                            >
+                              تعديل
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2 text-destructive"
+                              onClick={() => props.onDeleteBoard(board.id)}
+                            >
+                              حذف
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* جدول المهام */}
       <div className="bg-card rounded-lg border overflow-hidden">

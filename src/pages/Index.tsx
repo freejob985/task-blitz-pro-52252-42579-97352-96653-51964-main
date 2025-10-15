@@ -164,6 +164,55 @@ export default function Index() {
       
       // التحقق من أن الوجهة صالحة
       const destBoard = boards.find(b => b.id === destBoardId);
+      
+      // إذا كان من كانبان، نحتاج لمعالجة الحالة
+      if (destBoardId.startsWith('kanban-')) {
+        const status = destBoardId.replace('kanban-', '') as Task['status'];
+        // العثور على المهمة المراد نقلها
+        const taskToMove = tasks.find(t => t.id === result.draggableId);
+        if (!taskToMove) {
+          showToast('المهمة غير موجودة', 'error');
+          return;
+        }
+        
+        // تحديث حالة المهمة فقط
+        const updatedTask = { ...taskToMove, status };
+        const newTasks = tasks.map(t => t.id === result.draggableId ? updatedTask : t);
+        setTasks(newTasks);
+        await saveTask(updatedTask);
+        
+        const statusLabels = {
+          'waiting': 'في الانتظار',
+          'working': 'قيد التنفيذ', 
+          'completed': 'مكتملة'
+        };
+        showToast(`تم نقل المهمة إلى ${statusLabels[status]}`, 'success');
+        return;
+      }
+      
+      // إذا كان من التقويم، نحتاج لمعالجة التاريخ
+      if (destBoardId.startsWith('calendar-')) {
+        const dateString = destBoardId.replace('calendar-', '');
+        const [year, month, day] = dateString.split('-').map(Number);
+        const newDate = new Date(year, month, day).toISOString();
+        
+        // العثور على المهمة المراد نقلها
+        const taskToMove = tasks.find(t => t.id === result.draggableId);
+        if (!taskToMove) {
+          showToast('المهمة غير موجودة', 'error');
+          return;
+        }
+        
+        // تحديث تاريخ المهمة
+        const updatedTask = { ...taskToMove, dueDate: newDate };
+        const newTasks = tasks.map(t => t.id === result.draggableId ? updatedTask : t);
+        setTasks(newTasks);
+        await saveTask(updatedTask);
+        
+        showToast(`تم نقل المهمة إلى ${day}/${month + 1}/${year}`, 'success');
+        return;
+      }
+      
       if (!destBoard) {
         showToast('القسم الوجهة غير موجود', 'error');
         return;
