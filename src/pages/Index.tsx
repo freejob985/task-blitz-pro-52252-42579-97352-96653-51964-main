@@ -162,6 +162,20 @@ export default function Index() {
       const sourceBoardId = source.droppableId;
       const destBoardId = destination.droppableId;
       
+      // التحقق من أن الوجهة صالحة
+      const destBoard = boards.find(b => b.id === destBoardId);
+      if (!destBoard) {
+        showToast('القسم الوجهة غير موجود', 'error');
+        return;
+      }
+      
+      // العثور على المهمة المراد نقلها
+      const taskToMove = tasks.find(t => t.id === result.draggableId);
+      if (!taskToMove) {
+        showToast('المهمة غير موجودة', 'error');
+        return;
+      }
+      
       // إذا كان نفس القسم، فقط إعادة ترتيب
       if (sourceBoardId === destBoardId) {
         const boardTasks = tasks.filter(t => t.boardId === sourceBoardId);
@@ -180,20 +194,6 @@ export default function Index() {
         
         setTasks(allTasks);
         await saveTasks(updatedTasks);
-        return;
-      }
-      
-      // التحقق من أن الوجهة صالحة
-      const destBoard = boards.find(b => b.id === destBoardId);
-      if (!destBoard) {
-        showToast('القسم الوجهة غير موجود', 'error');
-        return;
-      }
-      
-      // العثور على المهمة المراد نقلها
-      const taskToMove = tasks.find(t => t.id === result.draggableId);
-      if (!taskToMove) {
-        showToast('المهمة غير موجودة', 'error');
         return;
       }
       
