@@ -16,7 +16,7 @@ import {
   DropdownMenuSubTrigger,
 } from './ui/dropdown-menu';
 import { Badge } from './ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, getDueDateInfo } from '@/lib/utils';
 import { getTagClassName, getTagIcon } from '@/lib/tagColors';
 
 interface TaskTableProps {
@@ -157,13 +157,26 @@ export function TaskTable({
                   </td>
                   <td>
                     {task.dueDate ? (
-                      <div className="flex items-center gap-1 text-sm">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(task.dueDate).toLocaleDateString('ar', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1 text-sm">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(task.dueDate).toLocaleDateString('ar', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </div>
+                        {(() => {
+                          const dueDateInfo = getDueDateInfo(task.dueDate);
+                          return dueDateInfo ? (
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs px-2 py-1 ${dueDateInfo.color} border-current/20`}
+                            >
+                              {dueDateInfo.text}
+                            </Badge>
+                          ) : null;
+                        })()}
                       </div>
                     ) : (
                       <span className="text-muted-foreground text-sm">-</span>

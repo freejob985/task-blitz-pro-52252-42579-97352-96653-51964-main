@@ -4,7 +4,7 @@ import { Draggable, Droppable } from '@hello-pangea/dnd';
 import { Grid, List, Calendar, Kanban, LayoutGrid, Table2, BarChart3, PieChart, Plus } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, getDueDateInfo } from '@/lib/utils';
 import type { Board, Task } from '@/types';
 
 export type ViewMode = 'default' | 'grid' | 'list' | 'calendar' | 'kanban' | 'table' | 'chart';
@@ -178,9 +178,22 @@ export function GridView(props: DefaultViewProps) {
                     >
                       {task.status === 'completed' && '✓'}
                     </button>
-                    <span className={`flex-1 truncate ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
-                      {task.title}
-                    </span>
+                    <div className="flex-1 min-w-0">
+                      <span className={`truncate block ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
+                        {task.title}
+                      </span>
+                      {task.dueDate && (() => {
+                        const dueDateInfo = getDueDateInfo(task.dueDate);
+                        return dueDateInfo ? (
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs px-2 py-0.5 mt-1 ${dueDateInfo.color} border-current/20`}
+                          >
+                            {dueDateInfo.text}
+                          </Badge>
+                        ) : null;
+                      })()}
+                    </div>
                     {task.priority && (
                       <Badge 
                         variant={task.priority === 'high' ? 'destructive' : 'secondary'}
@@ -387,6 +400,17 @@ export function ListView(props: DefaultViewProps) {
                               {task.description}
                             </p>
                           )}
+                          {task.dueDate && (() => {
+                            const dueDateInfo = getDueDateInfo(task.dueDate);
+                            return dueDateInfo ? (
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs px-2 py-0.5 mt-1 ${dueDateInfo.color} border-current/20`}
+                              >
+                                {dueDateInfo.text}
+                              </Badge>
+                            ) : null;
+                          })()}
                         </div>
                         <div className="flex items-center gap-2">
                           {task.priority && (
@@ -430,8 +454,32 @@ export function ListView(props: DefaultViewProps) {
 // مكون عرض التقويم
 export function CalendarView(props: DefaultViewProps) {
   const today = new Date();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+  
+  // وظائف التنقل بين الشهور
+  const goToPreviousMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
+
+  const goToToday = () => {
+    setCurrentMonth(today.getMonth());
+    setCurrentYear(today.getFullYear());
+  };
   
   // إنشاء أيام الشهر
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -472,8 +520,30 @@ export function CalendarView(props: DefaultViewProps) {
           })}
         </h2>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline">الشهر السابق</Button>
-          <Button size="sm" variant="outline">الشهر التالي</Button>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={goToPreviousMonth}
+            className="hover:bg-primary/10"
+          >
+            الشهر السابق
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={goToToday}
+            className="hover:bg-accent/10"
+          >
+            اليوم
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={goToNextMonth}
+            className="hover:bg-primary/10"
+          >
+            الشهر التالي
+          </Button>
         </div>
       </div>
       
@@ -660,8 +730,21 @@ export function KanbanView(props: DefaultViewProps) {
                         )}
                       </div>
                       {task.dueDate && (
-                        <div className="mt-2 text-xs text-muted-foreground">
-                          📅 {new Date(task.dueDate).toLocaleDateString('ar-SA')}
+                        <div className="mt-2 space-y-1">
+                          <div className="text-xs text-muted-foreground">
+                            📅 {new Date(task.dueDate).toLocaleDateString('ar-SA')}
+                          </div>
+                          {(() => {
+                            const dueDateInfo = getDueDateInfo(task.dueDate);
+                            return dueDateInfo ? (
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs px-2 py-0.5 ${dueDateInfo.color} border-current/20`}
+                              >
+                                {dueDateInfo.text}
+                              </Badge>
+                            ) : null;
+                          })()}
                         </div>
                       )}
                             </div>
@@ -964,8 +1047,27 @@ export function TableView(props: DefaultViewProps) {
                         <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </td>
-                    <td className="p-3 text-sm text-muted-foreground">
-                      {task.dueDate ? new Date(task.dueDate).toLocaleDateString('ar-SA') : '-'}
+                    <td className="p-3">
+                      {task.dueDate ? (
+                        <div className="flex flex-col gap-1">
+                          <div className="text-sm text-muted-foreground">
+                            {new Date(task.dueDate).toLocaleDateString('ar-SA')}
+                          </div>
+                          {(() => {
+                            const dueDateInfo = getDueDateInfo(task.dueDate);
+                            return dueDateInfo ? (
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs px-2 py-0.5 ${dueDateInfo.color} border-current/20`}
+                              >
+                                {dueDateInfo.text}
+                              </Badge>
+                            ) : null;
+                          })()}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
                     </td>
                     <td className="p-3">
                       <div className="flex gap-1">
