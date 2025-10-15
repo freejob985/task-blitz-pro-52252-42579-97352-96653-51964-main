@@ -303,9 +303,9 @@ export function BoardColumn({
 
           {/* عرض الأقسام الفرعية */}
           {!board.parentId && !hiddenSubBoards.has(board.id) && (
-            <div className="space-y-4 mt-16">
+            <div className="space-y-4 mt-24">
               {/* خط فاصل بصري للأقسام الفرعية */}
-              <div className="flex items-center justify-center py-6 mb-8">
+              <div className="flex items-center justify-center py-8 mb-10">
                 <div className="flex-1 h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent"></div>
                 <div className="px-6 py-2 bg-gradient-to-r from-accent/10 to-primary/10 rounded-full border border-accent/30 shadow-sm">
                   <h3 className="font-cairo font-bold text-lg text-accent">
@@ -320,7 +320,7 @@ export function BoardColumn({
                 </Badge>
               </div>
               {boards.filter(subBoard => subBoard.parentId === board.id).length > 0 ? (
-                <div className="space-y-12">
+                <div className="space-y-16">
                   {boards
                     .filter(subBoard => subBoard.parentId === board.id)
                     .map((subBoard, index) => {

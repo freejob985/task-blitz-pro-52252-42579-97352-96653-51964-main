@@ -320,15 +320,17 @@ export function BoardManager({
 
             {/* قائمة الأقسام */}
             <ScrollArea className="h-96">
-              <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-2'}>
+              <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-6'}>
                 {filteredBoards.map(board => (
-                  <div key={board.id}>
+                  <div key={board.id} className="space-y-4">
                     <BoardCard board={board} />
                     {/* الأقسام الفرعية */}
                     {subBoards
                       .filter(sub => sub.parentId === board.id)
                       .map(subBoard => (
-                        <BoardCard key={subBoard.id} board={subBoard} isSubBoard />
+                        <div key={subBoard.id} className="mr-4">
+                          <BoardCard board={subBoard} isSubBoard />
+                        </div>
                       ))}
                   </div>
                 ))}
