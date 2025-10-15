@@ -60,6 +60,7 @@ export default function Index() {
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [defaultBoardId, setDefaultBoardId] = useState<string>();
   const [focusedBoardId, setFocusedBoardId] = useState<string | null>(null);
+  const [hiddenSubBoards, setHiddenSubBoards] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     initDB().then(() => {
@@ -76,6 +77,25 @@ export default function Index() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
+    
+    // إضافة CSS مخصص لـ SweetAlert
+    const style = document.createElement('style');
+    style.textContent = `
+      .swal2-popup {
+        z-index: 99999 !important;
+      }
+      .swal2-backdrop {
+        z-index: 99998 !important;
+      }
+      .swal2-container {
+        z-index: 99999 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
   }, [theme]);
 
   const loadData = async () => {
@@ -242,6 +262,9 @@ export default function Index() {
       confirmButtonText: 'حذف',
       cancelButtonText: 'إلغاء',
       confirmButtonColor: '#ef4444',
+      customClass: {
+        popup: 'z-[9999]'
+      }
     });
     
     if (result.isConfirmed) {
@@ -249,6 +272,52 @@ export default function Index() {
       await deleteTask(id);
       await playSound('delete');
       showToast('تم حذف المهمة', 'info');
+    }
+  };
+
+  const handleDeleteBoard = async (id: string) => {
+    const board = boards.find(b => b.id === id);
+    if (!board) return;
+
+    const isSubBoard = board.parentId ? 'قسم فرعي' : 'قسم رئيسي';
+    const parentBoard = board.parentId ? boards.find(b => b.id === board.parentId) : null;
+    
+    const result = await Swal.fire({
+      title: `حذف ${isSubBoard}؟`,
+      html: `
+        <div class="text-center">
+          <p class="text-lg mb-2">هل أنت متأكد من حذف "${board.title}"؟</p>
+          ${parentBoard ? `<p class="text-sm text-muted-foreground">القسم الرئيسي: ${parentBoard.title}</p>` : ''}
+          <p class="text-sm text-red-600 mt-2">سيتم حذف جميع المهام في هذا القسم</p>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'حذف',
+      cancelButtonText: 'إلغاء',
+      confirmButtonColor: '#ef4444',
+      customClass: {
+        popup: 'z-[9999]'
+      },
+      allowOutsideClick: false,
+      allowEscapeKey: true
+    });
+    
+    if (result.isConfirmed) {
+      // حذف القسم
+      setBoards(boards.filter(b => b.id !== id));
+      
+      // حذف جميع المهام في هذا القسم
+      setTasks(tasks.filter(t => t.boardId !== id));
+      
+      // حذف من قاعدة البيانات
+      await deleteBoard(id);
+      
+      // حذف المهام من قاعدة البيانات
+      const tasksToDelete = tasks.filter(t => t.boardId === id);
+      await Promise.all(tasksToDelete.map(task => deleteTask(task.id)));
+      
+      showToast(`تم حذف ${isSubBoard} "${board.title}"`, 'success');
     }
   };
 
@@ -390,6 +459,31 @@ export default function Index() {
       setBoards(boards.map(b => b.id === boardId ? updated : b));
       await saveBoard(updated);
       showToast(updated.isFavorite ? 'تم إضافة للمفضلة' : 'تم إزالة من المفضلة', 'success');
+    }
+  };
+
+  const handleToggleSubBoardVisibility = (boardId: string) => {
+    setHiddenSubBoards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(boardId)) {
+        newSet.delete(boardId);
+        showToast('تم إظهار الأقسام الفرعية', 'success');
+      } else {
+        newSet.add(boardId);
+        showToast('تم إخفاء الأقسام الفرعية', 'info');
+      }
+      return newSet;
+    });
+  };
+
+  const handleFocusOnBoard = (boardId: string) => {
+    if (focusedBoardId === boardId) {
+      setFocusedBoardId(null);
+      showToast('تم إلغاء التركيز', 'info');
+    } else {
+      setFocusedBoardId(boardId);
+      const board = boards.find(b => b.id === boardId);
+      showToast(`تم التركيز على "${board?.title}"`, 'success');
     }
   };
 
@@ -572,7 +666,27 @@ export default function Index() {
               <Upload className="h-4 w-4 ml-2" />
               استيراد
             </Button>
-            <Button onClick={async () => { const { value } = await Swal.fire({ title: 'قسم جديد', input: 'text', inputPlaceholder: 'اسم القسم', showCancelButton: true }); if (value) { const newBoard: Board = { id: `board-${Date.now()}`, title: value, order: boards.length, createdAt: new Date().toISOString() }; setBoards([...boards, newBoard]); await saveBoard(newBoard); } }}>
+            <Button onClick={async () => { 
+              const { value } = await Swal.fire({ 
+                title: 'قسم جديد', 
+                input: 'text', 
+                inputPlaceholder: 'اسم القسم', 
+                showCancelButton: true,
+                customClass: {
+                  popup: 'z-[9999]'
+                }
+              }); 
+              if (value) { 
+                const newBoard: Board = { 
+                  id: `board-${Date.now()}`, 
+                  title: value, 
+                  order: boards.length, 
+                  createdAt: new Date().toISOString() 
+                }; 
+                setBoards([...boards, newBoard]); 
+                await saveBoard(newBoard); 
+              } 
+            }}>
               <Plus className="h-4 w-4 ml-2" />
               قسم جديد
             </Button>
@@ -604,8 +718,23 @@ export default function Index() {
                       isFocused={isFocused}
                       onToggleFocus={(id) => setFocusedBoardId(focusedBoardId === id ? null : id)}
                       onAddTask={(id) => { setDefaultBoardId(id); setEditingTask(undefined); setTaskModalOpen(true); }} 
-                      onEditBoard={async (b) => { const { value } = await Swal.fire({ title: 'تعديل القسم', input: 'text', inputValue: b.title, showCancelButton: true }); if (value) { const updated = boards.map(board => board.id === b.id ? { ...board, title: value } : board); setBoards(updated); await saveBoard({ ...b, title: value }); } }} 
-                      onDeleteBoard={async (id) => { const result = await Swal.fire({ title: 'حذف القسم؟', text: 'سيتم حذف جميع المهام فيه', icon: 'warning', showCancelButton: true, confirmButtonText: 'حذف', confirmButtonColor: '#ef4444' }); if (result.isConfirmed) { setBoards(boards.filter(b => b.id !== id)); setTasks(tasks.filter(t => t.boardId !== id)); await deleteBoard(id); } }} 
+                      onEditBoard={async (b) => { 
+                        const { value } = await Swal.fire({ 
+                          title: 'تعديل القسم', 
+                          input: 'text', 
+                          inputValue: b.title, 
+                          showCancelButton: true,
+                          customClass: {
+                            popup: 'z-[9999]'
+                          }
+                        }); 
+                        if (value) { 
+                          const updated = boards.map(board => board.id === b.id ? { ...board, title: value } : board); 
+                          setBoards(updated); 
+                          await saveBoard({ ...b, title: value }); 
+                        } 
+                      }} 
+                      onDeleteBoard={handleDeleteBoard} 
                       onEditTask={(t) => { setEditingTask(t); setTaskModalOpen(true); }} 
                       onDeleteTask={handleDeleteTask} 
                       onDuplicateTask={async (t) => { const dup: Task = { ...t, id: `task-${Date.now()}`, title: `${t.title} (نسخة)`, createdAt: new Date().toISOString() }; setTasks([...tasks, dup]); await saveTask(dup); showToast('تم تكرار المهمة', 'success'); }} 
@@ -632,6 +761,10 @@ export default function Index() {
                       onArchiveTask={handleArchiveTask}
                       onAddSubBoard={handleAddSubBoard}
                       onToggleBoardCollapse={handleToggleBoardCollapse}
+                      onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
+                      onFocusOnBoard={handleFocusOnBoard}
+                      hiddenSubBoards={hiddenSubBoards}
+                      focusedBoardId={focusedBoardId}
                     />
                   );
                 })}
@@ -654,8 +787,12 @@ export default function Index() {
         onOpenChange={setBoardManagerOpen} 
         boards={boards} 
         onAddBoard={handleAddBoard}
-        onEditBoard={async (b) => { const updated = boards.map(board => board.id === b.id ? b : board); setBoards(updated); await saveBoard(b); }}
-        onDeleteBoard={async (id) => { const result = await Swal.fire({ title: 'حذف القسم؟', text: 'سيتم حذف جميع المهام فيه', icon: 'warning', showCancelButton: true, confirmButtonText: 'حذف', confirmButtonColor: '#ef4444' }); if (result.isConfirmed) { setBoards(boards.filter(b => b.id !== id)); setTasks(tasks.filter(t => t.boardId !== id)); await deleteBoard(id); } }}
+        onEditBoard={async (b) => { 
+          const updated = boards.map(board => board.id === b.id ? b : board); 
+          setBoards(updated); 
+          await saveBoard(b); 
+        }}
+        onDeleteBoard={handleDeleteBoard}
         onToggleCollapse={handleToggleBoardCollapse}
         onDuplicateBoard={handleDuplicateBoard}
         onArchiveBoard={handleArchiveBoard}

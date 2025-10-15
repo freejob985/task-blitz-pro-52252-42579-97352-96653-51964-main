@@ -1,7 +1,7 @@
 // مكون عمود القسم
 import { useState, useEffect } from 'react';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
-import { MoreVertical, Plus, GripVertical, Edit2, Layers, Trash2, Copy, Maximize2, Minimize2, ChevronDown, ChevronUp, Archive, Star } from 'lucide-react';
+import { MoreVertical, Plus, GripVertical, Edit2, Layers, Trash2, Copy, Maximize2, Minimize2, ChevronDown, ChevronUp, Archive, Star, Eye, EyeOff, Focus } from 'lucide-react';
 import type { Board, Task } from '@/types';
 import { copyBoardTasks } from '@/lib/clipboard';
 import { showToast } from '@/lib/toast';
@@ -46,6 +46,10 @@ interface BoardColumnProps {
   onArchiveTask: (taskId: string) => void;
   onAddSubBoard: (parentId: string, title: string) => void;
   onToggleBoardCollapse: (boardId: string) => void;
+  onToggleSubBoardVisibility: (boardId: string) => void;
+  onFocusOnBoard: (boardId: string) => void;
+  hiddenSubBoards: Set<string>;
+  focusedBoardId?: string | null;
 }
 
 export function BoardColumn({
@@ -67,6 +71,10 @@ export function BoardColumn({
   onArchiveTask,
   onAddSubBoard,
   onToggleBoardCollapse,
+  onToggleSubBoardVisibility,
+  onFocusOnBoard,
+  hiddenSubBoards,
+  focusedBoardId,
 }: BoardColumnProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -106,7 +114,8 @@ export function BoardColumn({
             'bg-gradient-to-br from-card to-card/80 rounded-2xl p-6 w-full transition-all duration-300',
             'border-2 border-border/50 shadow-card hover:shadow-hover',
             snapshot.isDragging && 'border-primary shadow-xl scale-[1.02]',
-            isFocused && 'ring-4 ring-primary/30 border-primary shadow-2xl'
+            isFocused && 'ring-4 ring-primary/30 border-primary shadow-2xl',
+            focusedBoardId === board.id && 'ring-4 ring-accent/30 border-accent shadow-2xl'
           )}
         >
           {/* رأس القسم - تصميم مميز */}
@@ -175,6 +184,33 @@ export function BoardColumn({
                 >
                   {isFocused ? <Minimize2 className="h-5 w-5 text-primary" /> : <Maximize2 className="h-5 w-5 text-primary" />}
                 </Button>
+
+                {/* زر التركيز على القسم */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onFocusOnBoard(board.id)}
+                  className="h-9 w-9 hover:bg-accent/10"
+                  title={focusedBoardId === board.id ? 'إلغاء التركيز' : 'التركيز على هذا القسم'}
+                >
+                  <Focus className={`h-5 w-5 ${focusedBoardId === board.id ? 'text-accent' : 'text-muted-foreground'}`} />
+                </Button>
+
+                {/* زر إخفاء/إظهار الأقسام الفرعية */}
+                {!board.parentId && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onToggleSubBoardVisibility(board.id)}
+                    className="h-9 w-9 hover:bg-accent/10"
+                    title={hiddenSubBoards.has(board.id) ? 'إظهار الأقسام الفرعية' : 'إخفاء الأقسام الفرعية'}
+                  >
+                    {hiddenSubBoards.has(board.id) ? 
+                      <EyeOff className="h-5 w-5 text-muted-foreground" /> : 
+                      <Eye className="h-5 w-5 text-accent" />
+                    }
+                  </Button>
+                )}
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -246,7 +282,7 @@ export function BoardColumn({
           )}
 
           {/* عرض الأقسام الفرعية */}
-          {!board.parentId && (
+          {!board.parentId && !hiddenSubBoards.has(board.id) && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-3">
                 <h3 className="font-cairo font-semibold text-lg text-muted-foreground">
@@ -392,6 +428,14 @@ export function BoardColumn({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* رسالة الأقسام الفرعية المخفية */}
+          {!board.parentId && hiddenSubBoards.has(board.id) && (
+            <div className="text-center py-4 text-muted-foreground bg-muted/20 rounded-lg border-2 border-dashed border-muted">
+              <p className="text-sm">الأقسام الفرعية مخفية</p>
+              <p className="text-xs mt-1">انقر على زر العين لإظهارها</p>
             </div>
           )}
 
