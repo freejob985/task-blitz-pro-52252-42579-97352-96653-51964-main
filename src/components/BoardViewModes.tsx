@@ -480,6 +480,12 @@ export function CalendarView(props: DefaultViewProps) {
     setCurrentMonth(today.getMonth());
     setCurrentYear(today.getFullYear());
   };
+
+  // ترجمة الشهور الميلادية للعربية
+  const monthNames = [
+    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+  ];
   
   // إنشاء أيام الشهر
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -514,10 +520,7 @@ export function CalendarView(props: DefaultViewProps) {
     <div className="bg-card rounded-lg border p-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">
-          {new Date(currentYear, currentMonth).toLocaleDateString('ar-SA', { 
-            year: 'numeric', 
-            month: 'long' 
-          })}
+          {monthNames[currentMonth]} {currentYear}
         </h2>
         <div className="flex gap-2">
           <Button 
@@ -732,7 +735,7 @@ export function KanbanView(props: DefaultViewProps) {
                       {task.dueDate && (
                         <div className="mt-2 space-y-1">
                           <div className="text-xs text-muted-foreground">
-                            📅 {new Date(task.dueDate).toLocaleDateString('ar-SA')}
+                            📅 {new Date(task.dueDate).toLocaleDateString('en-GB')}
                           </div>
                           {(() => {
                             const dueDateInfo = getDueDateInfo(task.dueDate);
@@ -1051,7 +1054,7 @@ export function TableView(props: DefaultViewProps) {
                       {task.dueDate ? (
                         <div className="flex flex-col gap-1">
                           <div className="text-sm text-muted-foreground">
-                            {new Date(task.dueDate).toLocaleDateString('ar-SA')}
+                            {new Date(task.dueDate).toLocaleDateString('en-GB')}
                           </div>
                           {(() => {
                             const dueDateInfo = getDueDateInfo(task.dueDate);

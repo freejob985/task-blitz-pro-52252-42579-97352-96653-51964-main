@@ -160,7 +160,7 @@ export function TaskTable({
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1 text-sm">
                           <Calendar className="h-3 w-3" />
-                          {new Date(task.dueDate).toLocaleDateString('ar', {
+                          {new Date(task.dueDate).toLocaleDateString('en-GB', {
                             day: 'numeric',
                             month: 'short',
                             year: 'numeric',
