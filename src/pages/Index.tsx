@@ -297,10 +297,12 @@ export default function Index() {
       cancelButtonText: 'إلغاء',
       confirmButtonColor: '#ef4444',
       customClass: {
-        popup: 'z-[9999]'
+        popup: 'z-[99999]'
       },
       allowOutsideClick: false,
-      allowEscapeKey: true
+      allowEscapeKey: true,
+      focusConfirm: false,
+      focusCancel: false
     });
     
     if (result.isConfirmed) {

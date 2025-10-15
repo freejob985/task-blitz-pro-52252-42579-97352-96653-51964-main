@@ -1,7 +1,7 @@
 // مكون عمود القسم
 import { useState, useEffect } from 'react';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
-import { MoreVertical, Plus, GripVertical, Edit2, Layers, Trash2, Copy, Maximize2, Minimize2, ChevronDown, ChevronUp, Archive, Star, Eye, EyeOff, Focus } from 'lucide-react';
+import { MoreVertical, Plus, GripVertical, Edit2, Layers, Trash2, Copy, Maximize2, Minimize2, ChevronDown, ChevronUp, Archive, Star, Eye, EyeOff, Focus, FolderOpen, ChevronRight } from 'lucide-react';
 import type { Board, Task } from '@/types';
 import { copyBoardTasks } from '@/lib/clipboard';
 import { showToast } from '@/lib/toast';
@@ -106,18 +106,18 @@ export function BoardColumn({
         <ContextMenu>
           <ContextMenuTrigger asChild>
             <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          className={cn(
-            'bg-gradient-to-br from-card to-card/80 rounded-2xl p-6 w-full transition-all duration-300',
-            'border-2 border-border/50 shadow-card hover:shadow-hover',
-            snapshot.isDragging && 'border-primary shadow-xl scale-[1.02]',
-            isFocused && 'ring-4 ring-primary/30 border-primary shadow-2xl',
-            focusedBoardId === board.id && 'ring-4 ring-accent/30 border-accent shadow-2xl'
-          )}
-        >
+              ref={provided.innerRef}
+              {...provided.draggableProps}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+              className={cn(
+                'bg-gradient-to-br from-card to-card/80 rounded-2xl p-6 w-full transition-all duration-300',
+                'border-2 border-border/50 shadow-card hover:shadow-hover',
+                snapshot.isDragging && 'border-primary shadow-xl scale-[1.02]',
+                isFocused && 'ring-4 ring-primary/30 border-primary shadow-2xl',
+                focusedBoardId === board.id && 'ring-4 ring-accent/30 border-accent shadow-2xl'
+              )}
+            >
           {/* رأس القسم - تصميم مميز */}
           <div className="relative bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl p-4 mb-4 border border-primary/20">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 rounded-xl" />
@@ -293,93 +293,111 @@ export function BoardColumn({
                 </Badge>
               </div>
               {boards.filter(subBoard => subBoard.parentId === board.id).length > 0 ? (
-                boards
-                  .filter(subBoard => subBoard.parentId === board.id)
-                  .map(subBoard => {
-                  const subBoardTasks = tasks.filter(t => t.boardId === subBoard.id);
-                  return (
-                    <div key={subBoard.id} className="border border-muted rounded-lg p-4 bg-muted/30">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: subBoard.color || '#3b82f6' }}
-                          />
-                          <h3 className="font-cairo font-semibold text-lg text-muted-foreground">
-                            {subBoard.title}
-                          </h3>
-                          {subBoard.description && (
-                            <span className="text-sm text-muted-foreground">
-                              - {subBoard.description}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            {subBoardTasks.length} مهمة
-                          </Badge>
-                          {subBoardTasks.filter(t => t.status === 'completed').length > 0 && (
-                            <Badge variant="secondary" className="text-xs">
-                              {subBoardTasks.filter(t => t.status === 'completed').length} مكتملة
-                            </Badge>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => onAddTask(subBoard.id)}
-                            className="h-7 px-2"
-                          >
-                            <Plus className="h-3 w-3 ml-1" />
-                            مهمة
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => onBulkAdd(subBoard.id)}
-                            className="h-7 px-2"
-                          >
-                            <Layers className="h-3 w-3 ml-1" />
-                            متعددة
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* شريط التقدم للأقسام الفرعية */}
-                      {subBoardTasks.length > 0 && (
-                        <div className="mb-3 space-y-1">
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
-                              style={{ 
-                                width: `${(subBoardTasks.filter(t => t.status === 'completed').length / subBoardTasks.length) * 100}%` 
-                              }}
-                            />
+                <div className="space-y-6">
+                  {boards
+                    .filter(subBoard => subBoard.parentId === board.id)
+                    .map((subBoard, index) => {
+                    const subBoardTasks = tasks.filter(t => t.boardId === subBoard.id);
+                    return (
+                      <div key={subBoard.id} className="relative">
+                        {/* خط التوصيل بين الأقسام */}
+                        {index > 0 && (
+                          <div className="absolute -top-3 left-8 w-px h-3 bg-gradient-to-b from-primary/30 to-transparent" />
+                        )}
+                        
+                        <div className="border-2 border-primary/20 rounded-xl p-5 bg-gradient-to-br from-card/95 to-muted/30 shadow-md hover:shadow-lg transition-all duration-300">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              {/* أيقونة القسم الفرعي المميزة */}
+                              <div className="flex items-center gap-3">
+                                <div className="relative">
+                                  <div 
+                                    className="w-5 h-5 rounded-lg border-2 border-white shadow-md"
+                                    style={{ backgroundColor: subBoard.color || '#8b5cf6' }}
+                                  />
+                                  <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-accent rounded-full border-2 border-white animate-pulse" />
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-primary/60" />
+                                <FolderOpen className="w-6 h-6 text-accent" />
+                              </div>
+                              
+                              <div className="flex flex-col gap-1">
+                                <h3 className="font-cairo font-bold text-lg text-foreground">
+                                  {subBoard.title}
+                                </h3>
+                                {subBoard.description && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {subBoard.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                                {subBoardTasks.length} مهمة
+                              </Badge>
+                              {subBoardTasks.filter(t => t.status === 'completed').length > 0 && (
+                                <Badge variant="secondary" className="text-xs bg-accent/10 text-accent border-accent/30">
+                                  {subBoardTasks.filter(t => t.status === 'completed').length} مكتملة
+                                </Badge>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => onAddTask(subBoard.id)}
+                                className="h-7 px-2 hover:bg-primary/10"
+                              >
+                                <Plus className="h-3 w-3 ml-1" />
+                                مهمة
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => onBulkAdd(subBoard.id)}
+                                className="h-7 px-2 hover:bg-accent/10"
+                              >
+                                <Layers className="h-3 w-3 ml-1" />
+                                متعددة
+                              </Button>
+                            </div>
                           </div>
-                          <p className="text-xs text-muted-foreground text-center">
-                            {Math.round((subBoardTasks.filter(t => t.status === 'completed').length / subBoardTasks.length) * 100)}% مكتمل
-                          </p>
-                        </div>
-                      )}
                       
-                      {/* رسالة ترحيبية للأقسام الفرعية */}
-                      {subBoardTasks.length === 0 && (
-                        <div className="mb-3 p-2 bg-primary/5 rounded-lg border border-primary/20">
-                          <p className="text-xs text-primary text-center">
-                            🎯 هذا القسم الفرعي جاهز لاستقبال المهام
-                          </p>
-                        </div>
-                      )}
+                          {/* شريط التقدم للأقسام الفرعية */}
+                          {subBoardTasks.length > 0 && (
+                            <div className="mb-4 space-y-2">
+                              <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
+                                  style={{ 
+                                    width: `${(subBoardTasks.filter(t => t.status === 'completed').length / subBoardTasks.length) * 100}%` 
+                                  }}
+                                />
+                              </div>
+                              <p className="text-xs text-muted-foreground text-center font-medium">
+                                {Math.round((subBoardTasks.filter(t => t.status === 'completed').length / subBoardTasks.length) * 100)}% مكتمل
+                              </p>
+                            </div>
+                          )}
                       
-                      <Droppable droppableId={subBoard.id} type="task">
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            className={cn(
-                              'min-h-[100px] rounded-lg transition-all duration-300 border-2 border-dashed border-muted/50',
-                              snapshot.isDraggingOver && 'bg-primary/10 ring-2 ring-primary/30 border-primary/50 scale-[1.02]'
-                            )}
-                          >
+                          {/* رسالة ترحيبية للأقسام الفرعية */}
+                          {subBoardTasks.length === 0 && (
+                            <div className="mb-4 p-3 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg border border-primary/20">
+                              <p className="text-xs text-primary text-center font-medium">
+                                🎯 هذا القسم الفرعي جاهز لاستقبال المهام
+                              </p>
+                            </div>
+                          )}
+                      
+                          <Droppable droppableId={subBoard.id} type="task">
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                className={cn(
+                                  'min-h-[120px] rounded-lg transition-all duration-300 border-2 border-dashed border-muted/50 bg-gradient-to-br from-background/50 to-muted/20',
+                                  snapshot.isDraggingOver && 'bg-primary/10 ring-2 ring-primary/30 border-primary/50 scale-[1.02]'
+                                )}
+                              >
                             {subBoardTasks.length > 0 ? (
                               <TaskTable
                                 tasks={subBoardTasks}
@@ -409,13 +427,15 @@ export function BoardColumn({
                                 </div>
                               </div>
                             )}
-                            {provided.placeholder}
-                          </div>
-                        )}
-                      </Droppable>
-                    </div>
-                  );
-                  })
+                                {provided.placeholder}
+                              </div>
+                            )}
+                          </Droppable>
+                        </div>
+                      </div>
+                      );
+                    })}
+                </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border-2 border-dashed border-muted">
                   <p className="text-sm">لا توجد أقسام فرعية</p>
@@ -491,7 +511,7 @@ export function BoardColumn({
             </CollapsibleContent>
           </Collapsible>
         </div>
-      </ContextMenuTrigger>
+          </ContextMenuTrigger>
 
       {/* قائمة السياق للقسم */}
       <ContextMenuContent className="w-56">
@@ -544,7 +564,7 @@ export function BoardColumn({
           <span>حذف القسم</span>
         </ContextMenuItem>
       </ContextMenuContent>
-    </ContextMenu>
+        </ContextMenu>
       )}
     </Draggable>
   );
