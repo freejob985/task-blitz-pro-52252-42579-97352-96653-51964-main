@@ -17,6 +17,17 @@ import { SearchBar, FilterState } from '@/components/SearchBar';
 import { Statistics } from '@/components/Statistics';
 import { StatusManagement } from '@/components/StatusManagement';
 import { SplashScreen } from '@/components/SplashScreen';
+import { 
+  ViewModeSelector, 
+  ViewMode, 
+  DefaultView, 
+  GridView, 
+  ListView, 
+  CalendarView, 
+  KanbanView, 
+  TableView, 
+  ChartView 
+} from '@/components/BoardViewModes';
 import { initDB, getAllBoards, getAllTasks, saveBoard, saveTask, saveTasks, deleteBoard, deleteTask, archiveTask, getSettings, saveSettings } from '@/lib/db';
 import { showToast } from '@/lib/toast';
 import { playSound } from '@/lib/sounds';
@@ -61,6 +72,10 @@ export default function Index() {
   const [defaultBoardId, setDefaultBoardId] = useState<string>();
   const [focusedBoardId, setFocusedBoardId] = useState<string | null>(null);
   const [hiddenSubBoards, setHiddenSubBoards] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem('view-mode');
+    return (saved as ViewMode) || 'default';
+  });
 
   useEffect(() => {
     initDB().then(() => {
@@ -97,6 +112,10 @@ export default function Index() {
       document.head.removeChild(style);
     };
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('view-mode', viewMode);
+  }, [viewMode]);
 
   const loadData = async () => {
     const [loadedBoards, loadedTasks, settings] = await Promise.all([
@@ -282,6 +301,9 @@ export default function Index() {
     const isSubBoard = board.parentId ? 'قسم فرعي' : 'قسم رئيسي';
     const parentBoard = board.parentId ? boards.find(b => b.id === board.parentId) : null;
     
+    // إغلاق جميع النوافذ المنبثقة الأخرى أولاً
+    Swal.close();
+    
     const result = await Swal.fire({
       title: `حذف ${isSubBoard}؟`,
       html: `
@@ -297,12 +319,22 @@ export default function Index() {
       cancelButtonText: 'إلغاء',
       confirmButtonColor: '#ef4444',
       customClass: {
-        popup: 'z-[99999]'
+        popup: 'z-[999999]',
+        container: 'z-[999999]'
       },
       allowOutsideClick: false,
       allowEscapeKey: true,
       focusConfirm: false,
-      focusCancel: false
+      focusCancel: false,
+      backdrop: true,
+      didOpen: () => {
+        // التأكد من إغلاق جميع النوافذ الأخرى
+        document.querySelectorAll('.swal2-container').forEach(el => {
+          if (el !== document.querySelector('.swal2-container:last-child')) {
+            el.remove();
+          }
+        });
+      }
     });
     
     if (result.isConfirmed) {
@@ -700,81 +732,342 @@ export default function Index() {
         {/* الإحصائيات */}
         <Statistics tasks={tasks} />
 
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="boards" type="board" direction="vertical">
-            {(provided) => (
-              <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col gap-6">
-                {boards.filter(board => !board.parentId && !board.isArchived).map((board, index) => {
-                  const isFocused = focusedBoardId === board.id;
-                  const isHidden = focusedBoardId && focusedBoardId !== board.id;
-                  
-                  if (isHidden) return null;
-                  
-                  return (
-                    <BoardColumn 
-                      key={board.id} 
-                      board={board} 
-                      boards={boards} 
-                      tasks={filteredTasks.sort((a, b) => a.order - b.order)} 
-                      index={index} 
-                      isFocused={isFocused}
-                      onToggleFocus={(id) => setFocusedBoardId(focusedBoardId === id ? null : id)}
-                      onAddTask={(id) => { setDefaultBoardId(id); setEditingTask(undefined); setTaskModalOpen(true); }} 
-                      onEditBoard={async (b) => { 
-                        const { value } = await Swal.fire({ 
-                          title: 'تعديل القسم', 
-                          input: 'text', 
-                          inputValue: b.title, 
-                          showCancelButton: true,
-                          customClass: {
-                            popup: 'z-[9999]'
+        {/* اختيار طريقة العرض */}
+        <div className="mb-6">
+          <ViewModeSelector 
+            currentMode={viewMode} 
+            onModeChange={setViewMode} 
+          />
+        </div>
+
+        {/* عرض الأقسام حسب طريقة العرض المختارة */}
+        {viewMode === 'default' ? (
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="boards" type="board" direction="vertical">
+              {(provided) => (
+                <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col gap-6">
+                  {boards.filter(board => !board.parentId && !board.isArchived).map((board, index) => {
+                    const isFocused = focusedBoardId === board.id;
+                    const isHidden = focusedBoardId && focusedBoardId !== board.id;
+                    
+                    if (isHidden) return null;
+                    
+                    return (
+                      <BoardColumn 
+                        key={board.id} 
+                        board={board} 
+                        boards={boards} 
+                        tasks={filteredTasks.sort((a, b) => a.order - b.order)} 
+                        index={index} 
+                        isFocused={isFocused}
+                        onToggleFocus={(id) => setFocusedBoardId(focusedBoardId === id ? null : id)}
+                        onAddTask={(id) => { setDefaultBoardId(id); setEditingTask(undefined); setTaskModalOpen(true); }} 
+                        onEditBoard={async (b) => { 
+                          const { value } = await Swal.fire({ 
+                            title: 'تعديل القسم', 
+                            input: 'text', 
+                            inputValue: b.title, 
+                            showCancelButton: true,
+                            customClass: {
+                              popup: 'z-[9999]'
+                            }
+                          }); 
+                          if (value) { 
+                            const updated = boards.map(board => board.id === b.id ? { ...board, title: value } : board); 
+                            setBoards(updated); 
+                            await saveBoard({ ...b, title: value }); 
+                          } 
+                        }} 
+                        onDeleteBoard={handleDeleteBoard} 
+                        onEditTask={(t) => { setEditingTask(t); setTaskModalOpen(true); }} 
+                        onDeleteTask={handleDeleteTask} 
+                        onDuplicateTask={async (t) => { const dup: Task = { ...t, id: `task-${Date.now()}`, title: `${t.title} (نسخة)`, createdAt: new Date().toISOString() }; setTasks([...tasks, dup]); await saveTask(dup); showToast('تم تكرار المهمة', 'success'); }} 
+                        onTaskStatusChange={async (id, status) => { 
+                          const updated = tasks.map(t => t.id === id ? { ...t, status, ...(status === 'completed' && { completedAt: new Date().toISOString() }) } : t); 
+                          setTasks(updated); 
+                          await saveTask(updated.find(t => t.id === id)!); 
+                          if (status === 'completed') await playSound('complete');
+                          
+                          // التحقق من التقدم وإرسال الإشعارات
+                          const totalTasks = updated.length;
+                          const completedTasks = updated.filter(t => t.status === 'completed').length;
+                          await checkAndNotifyProgress(totalTasks, completedTasks);
+                          
+                          // التحقق من اكتمال جميع المهام
+                          if (status === 'completed' && checkAllTasksCompleted(updated)) {
+                            setTimeout(() => {
+                              showAllTasksCompletedAlert();
+                            }, 1000); // تأخير قصير لإظهار الإشعار بعد تحديث المهمة
                           }
-                        }); 
-                        if (value) { 
-                          const updated = boards.map(board => board.id === b.id ? { ...board, title: value } : board); 
-                          setBoards(updated); 
-                          await saveBoard({ ...b, title: value }); 
-                        } 
-                      }} 
-                      onDeleteBoard={handleDeleteBoard} 
-                      onEditTask={(t) => { setEditingTask(t); setTaskModalOpen(true); }} 
-                      onDeleteTask={handleDeleteTask} 
-                      onDuplicateTask={async (t) => { const dup: Task = { ...t, id: `task-${Date.now()}`, title: `${t.title} (نسخة)`, createdAt: new Date().toISOString() }; setTasks([...tasks, dup]); await saveTask(dup); showToast('تم تكرار المهمة', 'success'); }} 
-                      onTaskStatusChange={async (id, status) => { 
-                        const updated = tasks.map(t => t.id === id ? { ...t, status, ...(status === 'completed' && { completedAt: new Date().toISOString() }) } : t); 
-                        setTasks(updated); 
-                        await saveTask(updated.find(t => t.id === id)!); 
-                        if (status === 'completed') await playSound('complete');
-                        
-                        // التحقق من التقدم وإرسال الإشعارات
-                        const totalTasks = updated.length;
-                        const completedTasks = updated.filter(t => t.status === 'completed').length;
-                        await checkAndNotifyProgress(totalTasks, completedTasks);
-                        
-                        // التحقق من اكتمال جميع المهام
-                        if (status === 'completed' && checkAllTasksCompleted(updated)) {
-                          setTimeout(() => {
-                            showAllTasksCompletedAlert();
-                          }, 1000); // تأخير قصير لإظهار الإشعار بعد تحديث المهمة
-                        }
-                      }}
-                      onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }} 
-                      onMoveToBoard={handleMoveToBoard}
-                      onArchiveTask={handleArchiveTask}
-                      onAddSubBoard={handleAddSubBoard}
-                      onToggleBoardCollapse={handleToggleBoardCollapse}
-                      onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
-                      onFocusOnBoard={handleFocusOnBoard}
-                      hiddenSubBoards={hiddenSubBoards}
-                      focusedBoardId={focusedBoardId}
-                    />
-                  );
-                })}
-                {provided.placeholder}
-              </div>
+                        }}
+                        onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }} 
+                        onMoveToBoard={handleMoveToBoard}
+                        onArchiveTask={handleArchiveTask}
+                        onAddSubBoard={handleAddSubBoard}
+                        onToggleBoardCollapse={handleToggleBoardCollapse}
+                        onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
+                        onFocusOnBoard={handleFocusOnBoard}
+                        hiddenSubBoards={hiddenSubBoards}
+                        focusedBoardId={focusedBoardId}
+                      />
+                    );
+                  })}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+        ) : (
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="space-y-4">
+              {viewMode === 'grid' && (
+                <GridView
+                boards={boards}
+                tasks={filteredTasks}
+                onAddTask={(id) => { setDefaultBoardId(id); setEditingTask(undefined); setTaskModalOpen(true); }}
+                onEditBoard={async (b) => { 
+                  const { value } = await Swal.fire({ 
+                    title: 'تعديل القسم', 
+                    input: 'text', 
+                    inputValue: b.title, 
+                    showCancelButton: true,
+                    customClass: { popup: 'z-[9999]' }
+                  }); 
+                  if (value) { 
+                    const updated = boards.map(board => board.id === b.id ? { ...board, title: value } : board); 
+                    setBoards(updated); 
+                    await saveBoard({ ...b, title: value }); 
+                  } 
+                }}
+                onDeleteBoard={handleDeleteBoard}
+                onEditTask={(t) => { setEditingTask(t); setTaskModalOpen(true); }}
+                onDeleteTask={handleDeleteTask}
+                onDuplicateTask={async (t) => { const dup: Task = { ...t, id: `task-${Date.now()}`, title: `${t.title} (نسخة)`, createdAt: new Date().toISOString() }; setTasks([...tasks, dup]); await saveTask(dup); showToast('تم تكرار المهمة', 'success'); }}
+                onTaskStatusChange={async (id, status) => { 
+                  const updated = tasks.map(t => t.id === id ? { ...t, status, ...(status === 'completed' && { completedAt: new Date().toISOString() }) } : t); 
+                  setTasks(updated); 
+                  await saveTask(updated.find(t => t.id === id)!); 
+                  if (status === 'completed') await playSound('complete');
+                }}
+                onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }}
+                onMoveToBoard={handleMoveToBoard}
+                onArchiveTask={handleArchiveTask}
+                onAddSubBoard={handleAddSubBoard}
+                onToggleBoardCollapse={handleToggleBoardCollapse}
+                onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
+                onFocusOnBoard={handleFocusOnBoard}
+                hiddenSubBoards={hiddenSubBoards}
+                focusedBoardId={focusedBoardId}
+              />
             )}
-          </Droppable>
-        </DragDropContext>
+            
+            {viewMode === 'list' && (
+              <ListView
+                boards={boards}
+                tasks={filteredTasks}
+                onAddTask={(id) => { setDefaultBoardId(id); setEditingTask(undefined); setTaskModalOpen(true); }}
+                onEditBoard={async (b) => { 
+                  const { value } = await Swal.fire({ 
+                    title: 'تعديل القسم', 
+                    input: 'text', 
+                    inputValue: b.title, 
+                    showCancelButton: true,
+                    customClass: { popup: 'z-[9999]' }
+                  }); 
+                  if (value) { 
+                    const updated = boards.map(board => board.id === b.id ? { ...board, title: value } : board); 
+                    setBoards(updated); 
+                    await saveBoard({ ...b, title: value }); 
+                  } 
+                }}
+                onDeleteBoard={handleDeleteBoard}
+                onEditTask={(t) => { setEditingTask(t); setTaskModalOpen(true); }}
+                onDeleteTask={handleDeleteTask}
+                onDuplicateTask={async (t) => { const dup: Task = { ...t, id: `task-${Date.now()}`, title: `${t.title} (نسخة)`, createdAt: new Date().toISOString() }; setTasks([...tasks, dup]); await saveTask(dup); showToast('تم تكرار المهمة', 'success'); }}
+                onTaskStatusChange={async (id, status) => { 
+                  const updated = tasks.map(t => t.id === id ? { ...t, status, ...(status === 'completed' && { completedAt: new Date().toISOString() }) } : t); 
+                  setTasks(updated); 
+                  await saveTask(updated.find(t => t.id === id)!); 
+                  if (status === 'completed') await playSound('complete');
+                }}
+                onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }}
+                onMoveToBoard={handleMoveToBoard}
+                onArchiveTask={handleArchiveTask}
+                onAddSubBoard={handleAddSubBoard}
+                onToggleBoardCollapse={handleToggleBoardCollapse}
+                onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
+                onFocusOnBoard={handleFocusOnBoard}
+                hiddenSubBoards={hiddenSubBoards}
+                focusedBoardId={focusedBoardId}
+              />
+            )}
+            
+            {viewMode === 'calendar' && (
+              <CalendarView
+                boards={boards}
+                tasks={filteredTasks}
+                onAddTask={(id) => { setDefaultBoardId(id); setEditingTask(undefined); setTaskModalOpen(true); }}
+                onEditBoard={async (b) => { 
+                  const { value } = await Swal.fire({ 
+                    title: 'تعديل القسم', 
+                    input: 'text', 
+                    inputValue: b.title, 
+                    showCancelButton: true,
+                    customClass: { popup: 'z-[9999]' }
+                  }); 
+                  if (value) { 
+                    const updated = boards.map(board => board.id === b.id ? { ...board, title: value } : board); 
+                    setBoards(updated); 
+                    await saveBoard({ ...b, title: value }); 
+                  } 
+                }}
+                onDeleteBoard={handleDeleteBoard}
+                onEditTask={(t) => { setEditingTask(t); setTaskModalOpen(true); }}
+                onDeleteTask={handleDeleteTask}
+                onDuplicateTask={async (t) => { const dup: Task = { ...t, id: `task-${Date.now()}`, title: `${t.title} (نسخة)`, createdAt: new Date().toISOString() }; setTasks([...tasks, dup]); await saveTask(dup); showToast('تم تكرار المهمة', 'success'); }}
+                onTaskStatusChange={async (id, status) => { 
+                  const updated = tasks.map(t => t.id === id ? { ...t, status, ...(status === 'completed' && { completedAt: new Date().toISOString() }) } : t); 
+                  setTasks(updated); 
+                  await saveTask(updated.find(t => t.id === id)!); 
+                  if (status === 'completed') await playSound('complete');
+                }}
+                onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }}
+                onMoveToBoard={handleMoveToBoard}
+                onArchiveTask={handleArchiveTask}
+                onAddSubBoard={handleAddSubBoard}
+                onToggleBoardCollapse={handleToggleBoardCollapse}
+                onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
+                onFocusOnBoard={handleFocusOnBoard}
+                hiddenSubBoards={hiddenSubBoards}
+                focusedBoardId={focusedBoardId}
+              />
+            )}
+            
+            {viewMode === 'kanban' && (
+              <KanbanView
+                boards={boards}
+                tasks={filteredTasks}
+                onAddTask={(id) => { setDefaultBoardId(id); setEditingTask(undefined); setTaskModalOpen(true); }}
+                onEditBoard={async (b) => { 
+                  const { value } = await Swal.fire({ 
+                    title: 'تعديل القسم', 
+                    input: 'text', 
+                    inputValue: b.title, 
+                    showCancelButton: true,
+                    customClass: { popup: 'z-[9999]' }
+                  }); 
+                  if (value) { 
+                    const updated = boards.map(board => board.id === b.id ? { ...board, title: value } : board); 
+                    setBoards(updated); 
+                    await saveBoard({ ...b, title: value }); 
+                  } 
+                }}
+                onDeleteBoard={handleDeleteBoard}
+                onEditTask={(t) => { setEditingTask(t); setTaskModalOpen(true); }}
+                onDeleteTask={handleDeleteTask}
+                onDuplicateTask={async (t) => { const dup: Task = { ...t, id: `task-${Date.now()}`, title: `${t.title} (نسخة)`, createdAt: new Date().toISOString() }; setTasks([...tasks, dup]); await saveTask(dup); showToast('تم تكرار المهمة', 'success'); }}
+                onTaskStatusChange={async (id, status) => { 
+                  const updated = tasks.map(t => t.id === id ? { ...t, status, ...(status === 'completed' && { completedAt: new Date().toISOString() }) } : t); 
+                  setTasks(updated); 
+                  await saveTask(updated.find(t => t.id === id)!); 
+                  if (status === 'completed') await playSound('complete');
+                }}
+                onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }}
+                onMoveToBoard={handleMoveToBoard}
+                onArchiveTask={handleArchiveTask}
+                onAddSubBoard={handleAddSubBoard}
+                onToggleBoardCollapse={handleToggleBoardCollapse}
+                onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
+                onFocusOnBoard={handleFocusOnBoard}
+                hiddenSubBoards={hiddenSubBoards}
+                focusedBoardId={focusedBoardId}
+              />
+            )}
+            
+            {viewMode === 'table' && (
+              <TableView
+                boards={boards}
+                tasks={filteredTasks}
+                onAddTask={(id) => { setDefaultBoardId(id); setEditingTask(undefined); setTaskModalOpen(true); }}
+                onEditBoard={async (b) => { 
+                  const { value } = await Swal.fire({ 
+                    title: 'تعديل القسم', 
+                    input: 'text', 
+                    inputValue: b.title, 
+                    showCancelButton: true,
+                    customClass: { popup: 'z-[9999]' }
+                  }); 
+                  if (value) { 
+                    const updated = boards.map(board => board.id === b.id ? { ...board, title: value } : board); 
+                    setBoards(updated); 
+                    await saveBoard({ ...b, title: value }); 
+                  } 
+                }}
+                onDeleteBoard={handleDeleteBoard}
+                onEditTask={(t) => { setEditingTask(t); setTaskModalOpen(true); }}
+                onDeleteTask={handleDeleteTask}
+                onDuplicateTask={async (t) => { const dup: Task = { ...t, id: `task-${Date.now()}`, title: `${t.title} (نسخة)`, createdAt: new Date().toISOString() }; setTasks([...tasks, dup]); await saveTask(dup); showToast('تم تكرار المهمة', 'success'); }}
+                onTaskStatusChange={async (id, status) => { 
+                  const updated = tasks.map(t => t.id === id ? { ...t, status, ...(status === 'completed' && { completedAt: new Date().toISOString() }) } : t); 
+                  setTasks(updated); 
+                  await saveTask(updated.find(t => t.id === id)!); 
+                  if (status === 'completed') await playSound('complete');
+                }}
+                onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }}
+                onMoveToBoard={handleMoveToBoard}
+                onArchiveTask={handleArchiveTask}
+                onAddSubBoard={handleAddSubBoard}
+                onToggleBoardCollapse={handleToggleBoardCollapse}
+                onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
+                onFocusOnBoard={handleFocusOnBoard}
+                hiddenSubBoards={hiddenSubBoards}
+                focusedBoardId={focusedBoardId}
+              />
+            )}
+            
+            {viewMode === 'chart' && (
+              <ChartView
+                boards={boards}
+                tasks={filteredTasks}
+                onAddTask={(id) => { setDefaultBoardId(id); setEditingTask(undefined); setTaskModalOpen(true); }}
+                onEditBoard={async (b) => { 
+                  const { value } = await Swal.fire({ 
+                    title: 'تعديل القسم', 
+                    input: 'text', 
+                    inputValue: b.title, 
+                    showCancelButton: true,
+                    customClass: { popup: 'z-[9999]' }
+                  }); 
+                  if (value) { 
+                    const updated = boards.map(board => board.id === b.id ? { ...board, title: value } : board); 
+                    setBoards(updated); 
+                    await saveBoard({ ...b, title: value }); 
+                  } 
+                }}
+                onDeleteBoard={handleDeleteBoard}
+                onEditTask={(t) => { setEditingTask(t); setTaskModalOpen(true); }}
+                onDeleteTask={handleDeleteTask}
+                onDuplicateTask={async (t) => { const dup: Task = { ...t, id: `task-${Date.now()}`, title: `${t.title} (نسخة)`, createdAt: new Date().toISOString() }; setTasks([...tasks, dup]); await saveTask(dup); showToast('تم تكرار المهمة', 'success'); }}
+                onTaskStatusChange={async (id, status) => { 
+                  const updated = tasks.map(t => t.id === id ? { ...t, status, ...(status === 'completed' && { completedAt: new Date().toISOString() }) } : t); 
+                  setTasks(updated); 
+                  await saveTask(updated.find(t => t.id === id)!); 
+                  if (status === 'completed') await playSound('complete');
+                }}
+                onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }}
+                onMoveToBoard={handleMoveToBoard}
+                onArchiveTask={handleArchiveTask}
+                onAddSubBoard={handleAddSubBoard}
+                onToggleBoardCollapse={handleToggleBoardCollapse}
+                onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
+                onFocusOnBoard={handleFocusOnBoard}
+                hiddenSubBoards={hiddenSubBoards}
+                focusedBoardId={focusedBoardId}
+              />
+              )}
+            </div>
+          </DragDropContext>
+        )}
       </main>
 
       <TaskEditModal open={taskModalOpen} onOpenChange={setTaskModalOpen} task={editingTask} boards={boards} defaultBoardId={defaultBoardId} onSave={handleSaveTask} />

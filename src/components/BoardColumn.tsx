@@ -81,10 +81,30 @@ export function BoardColumn({
     const saved = localStorage.getItem(`board-collapsed-${board.id}`);
     return saved === 'true';
   });
+  const [collapsedSubBoards, setCollapsedSubBoards] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem(`subboards-collapsed-${board.id}`);
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
 
   useEffect(() => {
     localStorage.setItem(`board-collapsed-${board.id}`, String(isCollapsed));
   }, [isCollapsed, board.id]);
+
+  useEffect(() => {
+    localStorage.setItem(`subboards-collapsed-${board.id}`, JSON.stringify(Array.from(collapsedSubBoards)));
+  }, [collapsedSubBoards, board.id]);
+
+  const toggleSubBoardCollapse = (subBoardId: string) => {
+    setCollapsedSubBoards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(subBoardId)) {
+        newSet.delete(subBoardId);
+      } else {
+        newSet.add(subBoardId);
+      }
+      return newSet;
+    });
+  };
 
   // المهام الخاصة بهذا القسم فقط
   const boardTasks = tasks.filter(t => t.boardId === board.id);
@@ -308,6 +328,20 @@ export function BoardColumn({
                         <div className="border-2 border-primary/20 rounded-xl p-5 bg-gradient-to-br from-card/95 to-muted/30 shadow-md hover:shadow-lg transition-all duration-300">
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
+                              {/* زر الطي/الظهور للقسم الفرعي */}
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 hover:bg-primary/10"
+                                onClick={() => toggleSubBoardCollapse(subBoard.id)}
+                                title={collapsedSubBoards.has(subBoard.id) ? 'إظهار القسم الفرعي' : 'إخفاء القسم الفرعي'}
+                              >
+                                {collapsedSubBoards.has(subBoard.id) ? 
+                                  <ChevronRight className="h-4 w-4 text-primary" /> : 
+                                  <ChevronDown className="h-4 w-4 text-primary" />
+                                }
+                              </Button>
+
                               {/* أيقونة القسم الفرعي المميزة */}
                               <div className="flex items-center gap-3">
                                 <div className="relative">
@@ -362,75 +396,80 @@ export function BoardColumn({
                             </div>
                           </div>
                       
-                          {/* شريط التقدم للأقسام الفرعية */}
-                          {subBoardTasks.length > 0 && (
-                            <div className="mb-4 space-y-2">
-                              <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
-                                  style={{ 
-                                    width: `${(subBoardTasks.filter(t => t.status === 'completed').length / subBoardTasks.length) * 100}%` 
-                                  }}
-                                />
-                              </div>
-                              <p className="text-xs text-muted-foreground text-center font-medium">
-                                {Math.round((subBoardTasks.filter(t => t.status === 'completed').length / subBoardTasks.length) * 100)}% مكتمل
-                              </p>
-                            </div>
-                          )}
-                      
-                          {/* رسالة ترحيبية للأقسام الفرعية */}
-                          {subBoardTasks.length === 0 && (
-                            <div className="mb-4 p-3 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg border border-primary/20">
-                              <p className="text-xs text-primary text-center font-medium">
-                                🎯 هذا القسم الفرعي جاهز لاستقبال المهام
-                              </p>
-                            </div>
-                          )}
-                      
-                          <Droppable droppableId={subBoard.id} type="task">
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
-                                className={cn(
-                                  'min-h-[120px] rounded-lg transition-all duration-300 border-2 border-dashed border-muted/50 bg-gradient-to-br from-background/50 to-muted/20',
-                                  snapshot.isDraggingOver && 'bg-primary/10 ring-2 ring-primary/30 border-primary/50 scale-[1.02]'
+                          {/* محتوى القسم الفرعي القابل للطي */}
+                          <Collapsible open={!collapsedSubBoards.has(subBoard.id)}>
+                            <CollapsibleContent className="space-y-4">
+                              {/* شريط التقدم للأقسام الفرعية */}
+                              {subBoardTasks.length > 0 && (
+                                <div className="mb-4 space-y-2">
+                                  <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
+                                    <div 
+                                      className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
+                                      style={{ 
+                                        width: `${(subBoardTasks.filter(t => t.status === 'completed').length / subBoardTasks.length) * 100}%` 
+                                      }}
+                                    />
+                                  </div>
+                                  <p className="text-xs text-muted-foreground text-center font-medium">
+                                    {Math.round((subBoardTasks.filter(t => t.status === 'completed').length / subBoardTasks.length) * 100)}% مكتمل
+                                  </p>
+                                </div>
+                              )}
+                          
+                              {/* رسالة ترحيبية للأقسام الفرعية */}
+                              {subBoardTasks.length === 0 && (
+                                <div className="mb-4 p-3 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg border border-primary/20">
+                                  <p className="text-xs text-primary text-center font-medium">
+                                    🎯 هذا القسم الفرعي جاهز لاستقبال المهام
+                                  </p>
+                                </div>
+                              )}
+                          
+                              <Droppable droppableId={subBoard.id} type="task">
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.droppableProps}
+                                    className={cn(
+                                      'min-h-[120px] rounded-lg transition-all duration-300 border-2 border-dashed border-muted/50 bg-gradient-to-br from-background/50 to-muted/20',
+                                      snapshot.isDraggingOver && 'bg-primary/10 ring-2 ring-primary/30 border-primary/50 scale-[1.02]'
+                                    )}
+                                  >
+                                {subBoardTasks.length > 0 ? (
+                                  <TaskTable
+                                    tasks={subBoardTasks}
+                                    boards={boards}
+                                    onEdit={onEditTask}
+                                    onDelete={onDeleteTask}
+                                    onDuplicate={onDuplicateTask}
+                                    onStatusChange={onTaskStatusChange}
+                                    onToggleComplete={(id) => {
+                                      const task = subBoardTasks.find(t => t.id === id);
+                                      if (task) {
+                                        onTaskStatusChange(id, task.status === 'completed' ? 'waiting' : 'completed');
+                                      }
+                                    }}
+                                    onMoveToBoard={onMoveToBoard}
+                                    onArchive={onArchiveTask}
+                                  />
+                                ) : (
+                                  <div className="text-center py-8 text-muted-foreground bg-muted/10 rounded-lg border-2 border-dashed border-muted">
+                                    <p className="text-sm">لا توجد مهام في هذا القسم الفرعي</p>
+                                    <p className="text-xs mt-1">اسحب مهام هنا أو أضف مهمة جديدة</p>
+                                    <div className="mt-2 text-xs text-primary/70">
+                                      💡 يمكنك سحب المهام من الأقسام الأخرى إلى هنا
+                                    </div>
+                                    <div className="mt-1 text-xs text-accent/70">
+                                      🎯 السحب والإفلات يعمل بين جميع الأقسام
+                                    </div>
+                                  </div>
                                 )}
-                              >
-                            {subBoardTasks.length > 0 ? (
-                              <TaskTable
-                                tasks={subBoardTasks}
-                                boards={boards}
-                                onEdit={onEditTask}
-                                onDelete={onDeleteTask}
-                                onDuplicate={onDuplicateTask}
-                                onStatusChange={onTaskStatusChange}
-                                onToggleComplete={(id) => {
-                                  const task = subBoardTasks.find(t => t.id === id);
-                                  if (task) {
-                                    onTaskStatusChange(id, task.status === 'completed' ? 'waiting' : 'completed');
-                                  }
-                                }}
-                                onMoveToBoard={onMoveToBoard}
-                                onArchive={onArchiveTask}
-                              />
-                            ) : (
-                              <div className="text-center py-8 text-muted-foreground bg-muted/10 rounded-lg border-2 border-dashed border-muted">
-                                <p className="text-sm">لا توجد مهام في هذا القسم الفرعي</p>
-                                <p className="text-xs mt-1">اسحب مهام هنا أو أضف مهمة جديدة</p>
-                                <div className="mt-2 text-xs text-primary/70">
-                                  💡 يمكنك سحب المهام من الأقسام الأخرى إلى هنا
-                                </div>
-                                <div className="mt-1 text-xs text-accent/70">
-                                  🎯 السحب والإفلات يعمل بين جميع الأقسام
-                                </div>
-                              </div>
-                            )}
-                                {provided.placeholder}
-                              </div>
-                            )}
-                          </Droppable>
+                                    {provided.placeholder}
+                                  </div>
+                                )}
+                              </Droppable>
+                            </CollapsibleContent>
+                          </Collapsible>
                         </div>
                       </div>
                       );
