@@ -109,7 +109,7 @@ export function DefaultView(props: DefaultViewProps) {
 // مكون العرض الشبكي
 export function GridView(props: DefaultViewProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 p-4">
       {props.boards
         .filter(board => !board.parentId)
         .map((board) => {
@@ -120,25 +120,25 @@ export function GridView(props: DefaultViewProps) {
           return (
             <div
               key={board.id}
-              className="bg-gradient-to-br from-card to-card/80 rounded-2xl p-6 border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+              className="bg-gradient-to-br from-card to-card/80 rounded-2xl p-8 border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] mb-6"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
                   {board.color && (
                     <div 
-                      className="w-4 h-4 rounded-full shadow-sm"
+                      className="w-5 h-5 rounded-full shadow-sm"
                       style={{ backgroundColor: board.color }}
                     />
                   )}
-                  <h3 className="font-bold text-lg text-foreground">{board.title}</h3>
+                  <h3 className="font-bold text-xl text-foreground">{board.title}</h3>
                 </div>
-                <Badge variant="secondary" className="text-sm font-semibold px-3 py-1">
+                <Badge variant="secondary" className="text-sm font-semibold px-4 py-2">
                   {boardTasks.length} مهمة
                 </Badge>
               </div>
               
               {board.description && (
-                <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                <p className="text-sm text-muted-foreground mb-6 line-clamp-2 leading-relaxed">
                   {board.description}
                 </p>
               )}
@@ -149,7 +149,7 @@ export function GridView(props: DefaultViewProps) {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`space-y-3 mb-4 rounded-xl transition-all duration-300 ${
+                    className={`space-y-4 mb-6 rounded-xl transition-all duration-300 ${
                       snapshot.isDraggingOver ? 'bg-primary/10 ring-2 ring-primary/30' : ''
                     }`}
                   >
@@ -160,7 +160,7 @@ export function GridView(props: DefaultViewProps) {
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            className={`flex items-center gap-3 p-3 bg-gradient-to-r from-muted/30 to-muted/50 rounded-lg text-sm hover:bg-muted/70 cursor-pointer transition-all duration-200 ${
+                            className={`flex items-center gap-4 p-4 bg-gradient-to-r from-muted/30 to-muted/50 rounded-xl text-sm hover:bg-muted/70 cursor-pointer transition-all duration-200 ${
                               snapshot.isDragging ? 'rotate-1 scale-105 shadow-lg' : 'hover:shadow-md'
                             }`}
                             onClick={() => props.onEditTask(task)}
@@ -198,12 +198,12 @@ export function GridView(props: DefaultViewProps) {
                 )}
               </Droppable>
 
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm font-medium text-muted-foreground">
+              <div className="space-y-4">
+                <div className="flex justify-between text-base font-semibold text-muted-foreground">
                   <span>التقدم</span>
-                  <span className="text-primary font-bold">{Math.round(progress)}%</span>
+                  <span className="text-primary font-bold text-lg">{Math.round(progress)}%</span>
                 </div>
-                <div className="h-3 bg-muted/50 rounded-full overflow-hidden shadow-inner">
+                <div className="h-4 bg-muted/50 rounded-full overflow-hidden shadow-inner">
                   <div 
                     className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500 shadow-sm"
                     style={{ width: `${progress}%` }}
@@ -211,11 +211,11 @@ export function GridView(props: DefaultViewProps) {
                 </div>
               </div>
 
-              <div className="flex gap-2 mt-4">
+              <div className="flex gap-3 mt-6">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-8 text-sm px-4 flex-1 hover:bg-primary/10"
+                  className="h-10 text-sm px-6 flex-1 hover:bg-primary/10"
                   onClick={() => props.onAddTask(board.id)}
                 >
                   إضافة مهمة
@@ -223,7 +223,7 @@ export function GridView(props: DefaultViewProps) {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 text-sm px-4 hover:bg-muted/50"
+                  className="h-10 text-sm px-6 hover:bg-muted/50"
                   onClick={() => props.onEditBoard(board)}
                 >
                   تعديل
@@ -239,7 +239,7 @@ export function GridView(props: DefaultViewProps) {
 // مكون عرض القائمة
 export function ListView(props: DefaultViewProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 p-4">
       {props.boards
         .filter(board => !board.parentId)
         .map((board) => {
@@ -248,9 +248,9 @@ export function ListView(props: DefaultViewProps) {
           const progress = boardTasks.length > 0 ? (completedCount / boardTasks.length) * 100 : 0;
 
           return (
-            <div key={board.id} className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300">
+            <div key={board.id} className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 mb-8">
               {/* رأس القسم */}
-              <div className="flex items-center justify-between p-6 border-b border-border/50">
+              <div className="flex items-center justify-between p-8 border-b border-border/50">
                 <div className="flex items-center gap-4 flex-1">
                   {board.color && (
                     <div 
@@ -318,14 +318,14 @@ export function ListView(props: DefaultViewProps) {
               </div>
 
               {/* عرض المهام */}
-              <div className="p-6">
+              <div className="p-8">
                 {boardTasks.length > 0 ? (
                   <Droppable droppableId={board.id} type="task">
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`space-y-3 rounded-xl transition-all duration-300 ${
+                        className={`space-y-4 rounded-xl transition-all duration-300 ${
                           snapshot.isDraggingOver ? 'bg-primary/10 ring-2 ring-primary/30' : ''
                         }`}
                       >
@@ -336,7 +336,7 @@ export function ListView(props: DefaultViewProps) {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`flex items-center gap-4 p-4 bg-gradient-to-r from-muted/20 to-muted/40 rounded-xl hover:bg-muted/60 cursor-pointer transition-all duration-200 ${
+                                className={`flex items-center gap-5 p-5 bg-gradient-to-r from-muted/20 to-muted/40 rounded-xl hover:bg-muted/60 cursor-pointer transition-all duration-200 ${
                                   snapshot.isDragging ? 'rotate-1 scale-105 shadow-lg' : 'hover:shadow-md'
                                 }`}
                                 onClick={() => props.onEditTask(task)}
@@ -525,17 +525,17 @@ export function KanbanView(props: DefaultViewProps) {
   };
 
   return (
-    <div className="flex gap-6 overflow-x-auto pb-6">
+    <div className="flex gap-8 overflow-x-auto pb-8 p-4">
       {statuses.map(status => {
         const statusTasks = props.tasks.filter(task => task.status === status);
         return (
           <div key={status} className="flex-shrink-0 w-80">
-            <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-lg text-foreground">
+            <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold text-xl text-foreground">
                   {statusLabels[status]}
                 </h3>
-                <Badge variant="secondary" className="text-sm font-semibold px-3 py-1">
+                <Badge variant="secondary" className="text-sm font-semibold px-4 py-2">
                   {statusTasks.length} مهمة
                 </Badge>
               </div>
@@ -544,7 +544,7 @@ export function KanbanView(props: DefaultViewProps) {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`space-y-3 min-h-[500px] rounded-xl transition-all duration-300 ${
+                    className={`space-y-4 min-h-[600px] rounded-xl transition-all duration-300 ${
                       snapshot.isDraggingOver ? 'bg-primary/10 ring-2 ring-primary/30' : ''
                     }`}
                   >
@@ -556,12 +556,12 @@ export function KanbanView(props: DefaultViewProps) {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className={`bg-gradient-to-br from-card to-card/80 p-4 rounded-xl border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer ${
+                              className={`bg-gradient-to-br from-card to-card/80 p-5 rounded-xl border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer ${
                                 snapshot.isDragging ? 'rotate-2 scale-105 shadow-2xl' : 'hover:scale-[1.02]'
                               }`}
                               onClick={() => props.onEditTask(task)}
                             >
-                      <div className="flex items-start gap-2 mb-2">
+                      <div className="flex items-start gap-3 mb-3">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -629,19 +629,19 @@ export function KanbanView(props: DefaultViewProps) {
 // مكون عرض الجدول
 export function TableView(props: DefaultViewProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 p-4">
       {/* جدول الأقسام */}
       <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gradient-to-r from-muted/60 to-muted/40">
               <tr>
-                <th className="text-right p-4 text-sm font-bold text-foreground">القسم</th>
-                <th className="text-right p-4 text-sm font-bold text-foreground">الوصف</th>
-                <th className="text-right p-4 text-sm font-bold text-foreground">المهام</th>
-                <th className="text-right p-4 text-sm font-bold text-foreground">المكتملة</th>
-                <th className="text-right p-4 text-sm font-bold text-foreground">التقدم</th>
-                <th className="text-right p-4 text-sm font-bold text-foreground">الإجراءات</th>
+                <th className="text-right p-6 text-base font-bold text-foreground">القسم</th>
+                <th className="text-right p-6 text-base font-bold text-foreground">الوصف</th>
+                <th className="text-right p-6 text-base font-bold text-foreground">المهام</th>
+                <th className="text-right p-6 text-base font-bold text-foreground">المكتملة</th>
+                <th className="text-right p-6 text-base font-bold text-foreground">التقدم</th>
+                <th className="text-right p-6 text-base font-bold text-foreground">الإجراءات</th>
               </tr>
             </thead>
             <tbody>
@@ -654,7 +654,7 @@ export function TableView(props: DefaultViewProps) {
 
                   return (
                     <tr key={board.id} className="border-t border-border/30 hover:bg-muted/30 transition-all duration-200">
-                      <td className="p-4">
+                      <td className="p-6">
                         <div className="flex items-center gap-2">
                           {board.color && (
                             <div 
@@ -772,21 +772,21 @@ export function TableView(props: DefaultViewProps) {
                         </div>
                       </div>
                     </td>
-                    <td className="p-3">
-                      <Badge variant="outline" className="text-xs">
+                    <td className="p-6">
+                      <Badge variant="outline" className="text-sm">
                         {board?.title || 'غير محدد'}
                       </Badge>
                     </td>
-                    <td className="p-3">
+                    <td className="p-6">
                         <Badge 
                           variant={task.status === 'completed' ? 'default' : 'outline'}
-                          className="text-xs"
+                          className="text-sm"
                         >
                           {task.status === 'completed' ? 'مكتملة' : 
                            task.status === 'working' ? 'قيد التنفيذ' : 'في الانتظار'}
                         </Badge>
                     </td>
-                    <td className="p-3">
+                    <td className="p-6">
                       {task.priority ? (
                         <Badge 
                           variant={task.priority === 'high' ? 'destructive' : 'secondary'}
@@ -859,36 +859,36 @@ export function ChartView(props: DefaultViewProps) {
   const overallProgress = totalTasks > 0 ? (totalCompleted / totalTasks) * 100 : 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10 p-4">
       {/* إحصائيات عامة */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-6 rounded-2xl border-2 border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300">
-          <div className="text-3xl font-bold text-primary mb-2">{totalTasks}</div>
-          <div className="text-sm font-semibold text-muted-foreground">إجمالي المهام</div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-8 rounded-2xl border-2 border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300">
+          <div className="text-4xl font-bold text-primary mb-3">{totalTasks}</div>
+          <div className="text-base font-semibold text-muted-foreground">إجمالي المهام</div>
         </div>
-        <div className="bg-gradient-to-br from-green-500/10 to-green-500/5 p-6 rounded-2xl border-2 border-green-500/20 shadow-lg hover:shadow-xl transition-all duration-300">
-          <div className="text-3xl font-bold text-green-600 mb-2">{totalCompleted}</div>
-          <div className="text-sm font-semibold text-muted-foreground">مكتملة</div>
+        <div className="bg-gradient-to-br from-green-500/10 to-green-500/5 p-8 rounded-2xl border-2 border-green-500/20 shadow-lg hover:shadow-xl transition-all duration-300">
+          <div className="text-4xl font-bold text-green-600 mb-3">{totalCompleted}</div>
+          <div className="text-base font-semibold text-muted-foreground">مكتملة</div>
         </div>
-        <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 p-6 rounded-2xl border-2 border-blue-500/20 shadow-lg hover:shadow-xl transition-all duration-300">
-          <div className="text-3xl font-bold text-blue-600 mb-2">{totalInProgress}</div>
-          <div className="text-sm font-semibold text-muted-foreground">قيد التنفيذ</div>
+        <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 p-8 rounded-2xl border-2 border-blue-500/20 shadow-lg hover:shadow-xl transition-all duration-300">
+          <div className="text-4xl font-bold text-blue-600 mb-3">{totalInProgress}</div>
+          <div className="text-base font-semibold text-muted-foreground">قيد التنفيذ</div>
         </div>
-        <div className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 p-6 rounded-2xl border-2 border-orange-500/20 shadow-lg hover:shadow-xl transition-all duration-300">
-          <div className="text-3xl font-bold text-orange-600 mb-2">{totalWaiting}</div>
-          <div className="text-sm font-semibold text-muted-foreground">في الانتظار</div>
+        <div className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 p-8 rounded-2xl border-2 border-orange-500/20 shadow-lg hover:shadow-xl transition-all duration-300">
+          <div className="text-4xl font-bold text-orange-600 mb-3">{totalWaiting}</div>
+          <div className="text-base font-semibold text-muted-foreground">في الانتظار</div>
         </div>
       </div>
 
       {/* تقدم عام */}
-      <div className="bg-gradient-to-br from-card to-card/80 p-6 rounded-2xl border-2 border-border/50 shadow-lg">
-        <h3 className="font-bold text-xl mb-4 text-foreground">التقدم العام</h3>
-        <div className="space-y-3">
-          <div className="flex justify-between text-lg font-semibold">
+      <div className="bg-gradient-to-br from-card to-card/80 p-8 rounded-2xl border-2 border-border/50 shadow-lg">
+        <h3 className="font-bold text-2xl mb-6 text-foreground">التقدم العام</h3>
+        <div className="space-y-4">
+          <div className="flex justify-between text-xl font-semibold">
             <span className="text-muted-foreground">إجمالي التقدم</span>
-            <span className="text-primary font-bold">{Math.round(overallProgress)}%</span>
+            <span className="text-primary font-bold text-2xl">{Math.round(overallProgress)}%</span>
           </div>
-          <div className="h-6 bg-muted/50 rounded-full overflow-hidden shadow-inner">
+          <div className="h-8 bg-muted/50 rounded-full overflow-hidden shadow-inner">
             <div 
               className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-700 shadow-sm"
               style={{ width: `${overallProgress}%` }}
@@ -898,27 +898,27 @@ export function ChartView(props: DefaultViewProps) {
       </div>
 
       {/* توزيع المهام حسب الحالة */}
-      <div className="bg-gradient-to-br from-card to-card/80 p-6 rounded-2xl border-2 border-border/50 shadow-lg">
-        <h3 className="font-bold text-xl mb-6 text-foreground">توزيع المهام حسب الحالة</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center p-6 bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-xl border-2 border-green-500/20 shadow-lg hover:shadow-xl transition-all duration-300">
-            <div className="text-4xl font-bold text-green-600 mb-2">{totalCompleted}</div>
-            <div className="text-sm font-semibold text-muted-foreground mb-2">مكتملة</div>
-            <div className="text-xl font-bold text-green-600">
+      <div className="bg-gradient-to-br from-card to-card/80 p-8 rounded-2xl border-2 border-border/50 shadow-lg">
+        <h3 className="font-bold text-2xl mb-8 text-foreground">توزيع المهام حسب الحالة</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="text-center p-8 bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-xl border-2 border-green-500/20 shadow-lg hover:shadow-xl transition-all duration-300">
+            <div className="text-5xl font-bold text-green-600 mb-3">{totalCompleted}</div>
+            <div className="text-base font-semibold text-muted-foreground mb-3">مكتملة</div>
+            <div className="text-2xl font-bold text-green-600">
               {totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0}%
             </div>
           </div>
-          <div className="text-center p-6 bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-xl border-2 border-blue-500/20 shadow-lg hover:shadow-xl transition-all duration-300">
-            <div className="text-4xl font-bold text-blue-600 mb-2">{totalInProgress}</div>
-            <div className="text-sm font-semibold text-muted-foreground mb-2">قيد التنفيذ</div>
-            <div className="text-xl font-bold text-blue-600">
+          <div className="text-center p-8 bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-xl border-2 border-blue-500/20 shadow-lg hover:shadow-xl transition-all duration-300">
+            <div className="text-5xl font-bold text-blue-600 mb-3">{totalInProgress}</div>
+            <div className="text-base font-semibold text-muted-foreground mb-3">قيد التنفيذ</div>
+            <div className="text-2xl font-bold text-blue-600">
               {totalTasks > 0 ? Math.round((totalInProgress / totalTasks) * 100) : 0}%
             </div>
           </div>
-          <div className="text-center p-6 bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-xl border-2 border-orange-500/20 shadow-lg hover:shadow-xl transition-all duration-300">
-            <div className="text-4xl font-bold text-orange-600 mb-2">{totalWaiting}</div>
-            <div className="text-sm font-semibold text-muted-foreground mb-2">في الانتظار</div>
-            <div className="text-xl font-bold text-orange-600">
+          <div className="text-center p-8 bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-xl border-2 border-orange-500/20 shadow-lg hover:shadow-xl transition-all duration-300">
+            <div className="text-5xl font-bold text-orange-600 mb-3">{totalWaiting}</div>
+            <div className="text-base font-semibold text-muted-foreground mb-3">في الانتظار</div>
+            <div className="text-2xl font-bold text-orange-600">
               {totalTasks > 0 ? Math.round((totalWaiting / totalTasks) * 100) : 0}%
             </div>
           </div>
@@ -926,9 +926,9 @@ export function ChartView(props: DefaultViewProps) {
       </div>
 
       {/* إحصائيات الأقسام */}
-      <div className="bg-gradient-to-br from-card to-card/80 p-6 rounded-2xl border-2 border-border/50 shadow-lg">
-        <h3 className="font-bold text-xl mb-6 text-foreground">إحصائيات الأقسام</h3>
-        <div className="space-y-6">
+      <div className="bg-gradient-to-br from-card to-card/80 p-8 rounded-2xl border-2 border-border/50 shadow-lg">
+        <h3 className="font-bold text-2xl mb-8 text-foreground">إحصائيات الأقسام</h3>
+        <div className="space-y-8">
           {boardStats.length > 0 ? (
             boardStats.map(({ board, total, completed, inProgress, waiting, progress }) => (
               <div key={board.id} className="space-y-2">
