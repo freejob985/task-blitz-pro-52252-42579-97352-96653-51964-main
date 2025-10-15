@@ -363,3 +363,32 @@ export async function importAllData(data: AppData): Promise<void> {
     throw error;
   }
 }
+
+// حذف جميع البيانات
+export async function deleteAllData(): Promise<void> {
+  try {
+    if (db) {
+      const tx = db.transaction(['boards', 'tasks', 'sessions', 'settings'], 'readwrite');
+      await Promise.all([
+        tx.objectStore('boards').clear(),
+        tx.objectStore('tasks').clear(),
+        tx.objectStore('sessions').clear(),
+        tx.objectStore('settings').clear(),
+      ]);
+      await tx.done;
+    } else {
+      // حذف من localStorage
+      localStorage.removeItem('boards');
+      localStorage.removeItem('tasks');
+      localStorage.removeItem('sessions');
+      localStorage.removeItem('settings');
+      // حذف إعدادات إضافية
+      localStorage.removeItem('view-mode');
+      localStorage.removeItem('board-collapsed-');
+      localStorage.removeItem('subboards-collapsed-');
+    }
+  } catch (error) {
+    console.error('خطأ في حذف جميع البيانات:', error);
+    throw error;
+  }
+}

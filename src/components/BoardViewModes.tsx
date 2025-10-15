@@ -1,7 +1,7 @@
 // مكونات طرق العرض المختلفة للأقسام
 import { useState } from 'react';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
-import { Grid, List, Calendar, Kanban, LayoutGrid, Table2, BarChart3, PieChart, Plus } from 'lucide-react';
+import { Grid, List, Calendar, Kanban, LayoutGrid, Table2, BarChart3, PieChart, Plus, FolderTree, Layers, CheckCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn, getDueDateInfo } from '@/lib/utils';
@@ -775,11 +775,19 @@ export function KanbanView(props: DefaultViewProps) {
 // مكون عرض الجدول
 export function TableView(props: DefaultViewProps) {
   return (
-    <div className="space-y-8 p-4">
+    <div className="space-y-16 p-4">
       {/* جدول الأقسام الرئيسية */}
       <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg overflow-hidden">
-        <div className="p-4 border-b border-border/30">
-          <h3 className="font-bold text-xl text-foreground">الأقسام الرئيسية</h3>
+        <div className="p-6 border-b border-border/30 bg-gradient-to-r from-primary/5 to-accent/5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <FolderTree className="h-5 w-5 text-primary" />
+            </div>
+            <h3 className="font-bold text-2xl text-foreground">الأقسام الرئيسية</h3>
+            <Badge variant="outline" className="text-sm">
+              {props.boards.filter(board => !board.parentId).length} قسم رئيسي
+            </Badge>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -872,11 +880,28 @@ export function TableView(props: DefaultViewProps) {
         </div>
       </div>
 
+      {/* خط فاصل بصري */}
+      <div className="flex items-center justify-center py-8">
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
+        <div className="px-6 py-2 bg-muted/50 rounded-full border border-border/50">
+          <span className="text-sm font-medium text-muted-foreground">الأقسام الفرعية</span>
+        </div>
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
+      </div>
+
       {/* جدول الأقسام الفرعية */}
       {props.boards.filter(board => board.parentId).length > 0 && (
-        <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg overflow-hidden">
-          <div className="p-4 border-b border-border/30">
-            <h3 className="font-bold text-xl text-foreground">الأقسام الفرعية</h3>
+        <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg overflow-hidden mt-16">
+          <div className="p-6 border-b border-border/30 bg-gradient-to-r from-accent/5 to-primary/5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-accent/10 rounded-lg">
+                <Layers className="h-5 w-5 text-accent" />
+              </div>
+              <h3 className="font-bold text-2xl text-foreground">الأقسام الفرعية</h3>
+              <Badge variant="outline" className="text-sm">
+                {props.boards.filter(board => board.parentId).length} قسم فرعي
+              </Badge>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -975,10 +1000,27 @@ export function TableView(props: DefaultViewProps) {
         </div>
       )}
 
+      {/* خط فاصل بصري */}
+      <div className="flex items-center justify-center py-8">
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
+        <div className="px-6 py-2 bg-muted/50 rounded-full border border-border/50">
+          <span className="text-sm font-medium text-muted-foreground">جميع المهام</span>
+        </div>
+        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
+      </div>
+
       {/* جدول المهام */}
-      <div className="bg-card rounded-lg border overflow-hidden">
-        <div className="p-4 border-b">
-          <h3 className="font-semibold">جميع المهام</h3>
+      <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg overflow-hidden">
+        <div className="p-6 border-b border-border/30 bg-gradient-to-r from-primary/5 to-accent/5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <CheckCircle className="h-5 w-5 text-primary" />
+            </div>
+            <h3 className="font-bold text-2xl text-foreground">جميع المهام</h3>
+            <Badge variant="outline" className="text-sm">
+              {props.tasks.length} مهمة
+            </Badge>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { Plus, Timer, Download, Upload, Moon, Sun, Layers, Settings2, Smartphone, Copy, Bell, BellOff, Archive, FolderTree } from 'lucide-react';
+import { Plus, Timer, Download, Upload, Moon, Sun, Layers, Settings2, Smartphone, Copy, Bell, BellOff, Archive, FolderTree, Zap, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BoardColumn } from '@/components/BoardColumn';
 import { TaskEditModal } from '@/components/TaskEditModal';
@@ -28,7 +28,8 @@ import {
   TableView, 
   ChartView 
 } from '@/components/BoardViewModes';
-import { initDB, getAllBoards, getAllTasks, saveBoard, saveTask, saveTasks, deleteBoard, deleteTask, archiveTask, getSettings, saveSettings } from '@/lib/db';
+import { QuickAddMode } from '@/components/QuickAddMode';
+import { initDB, getAllBoards, getAllTasks, saveBoard, saveTask, saveTasks, deleteBoard, deleteTask, archiveTask, getSettings, saveSettings, deleteAllData } from '@/lib/db';
 import { showToast } from '@/lib/toast';
 import { playSound } from '@/lib/sounds';
 import { copyAllTasks, copyFilteredTasks } from '@/lib/clipboard';
@@ -76,6 +77,7 @@ export default function Index() {
     const saved = localStorage.getItem('view-mode');
     return (saved as ViewMode) || 'default';
   });
+  const [quickAddModeOpen, setQuickAddModeOpen] = useState(false);
 
   useEffect(() => {
     initDB().then(() => {
@@ -570,6 +572,95 @@ export default function Index() {
     }
   };
 
+  const handleDeleteAllData = async () => {
+    const result = await Swal.fire({
+      title: 'حذف جميع البيانات؟',
+      html: `
+        <div class="text-center">
+          <div class="text-6xl mb-4">⚠️</div>
+          <h3 class="text-2xl font-bold text-red-600 mb-4">تحذير شديد!</h3>
+          <p class="text-gray-600 mb-6">أنت على وشك حذف جميع البيانات نهائياً:</p>
+          <div class="text-right space-y-2 text-sm text-gray-500">
+            <div>• جميع المهام (${tasks.length} مهمة)</div>
+            <div>• جميع الأقسام (${boards.length} قسم)</div>
+            <div>• جميع الإعدادات</div>
+            <div>• جميع الجلسات</div>
+          </div>
+          <p class="text-red-600 font-bold mt-4">لا يمكن التراجع عن هذا الإجراء!</p>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'نعم، احذف الكل',
+      cancelButtonText: 'إلغاء',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      backdrop: `
+        rgba(0,0,0,0.4)
+        left top
+        no-repeat
+      `,
+      customClass: {
+        popup: 'animate-pulse',
+        title: 'font-cairo',
+        htmlContainer: 'font-tajawal',
+        confirmButton: 'font-cairo',
+        cancelButton: 'font-cairo'
+      },
+      input: 'text',
+      inputPlaceholder: 'اكتب "حذف" للتأكيد',
+      inputValidator: (value) => {
+        if (value !== 'حذف') {
+          return 'يجب كتابة "حذف" للتأكيد';
+        }
+      }
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteAllData();
+        
+        // إعادة تعيين جميع الحالات
+        setBoards([]);
+        setTasks([]);
+        setFocusedBoardId(null);
+        setHiddenSubBoards(new Set());
+        setSearchQuery('');
+        setFilters({
+          status: [],
+          priority: [],
+          tags: [],
+          boardId: null,
+          boardCategory: null,
+          showFavoritesOnly: false,
+          overdue: false,
+        });
+        
+        // إعادة تحميل البيانات الافتراضية
+        await loadData();
+        
+        await playSound('delete');
+        showToast('تم حذف جميع البيانات بنجاح', 'success');
+        
+        // رسالة تأكيد
+        await Swal.fire({
+          title: 'تم الحذف بنجاح!',
+          text: 'تم حذف جميع البيانات وإعادة تعيين التطبيق',
+          icon: 'success',
+          confirmButtonText: 'حسناً',
+          customClass: {
+            popup: 'z-[9999]'
+          }
+        });
+      } catch (error) {
+        console.error('خطأ في حذف البيانات:', error);
+        showToast('حدث خطأ أثناء حذف البيانات', 'error');
+      }
+    }
+  };
+
   // التحقق من اكتمال جميع المهام
   const checkAllTasksCompleted = (updatedTasks: Task[]) => {
     const activeTasks = updatedTasks.filter(t => !t.archived);
@@ -727,8 +818,14 @@ export default function Index() {
               <Button onClick={() => setBoardManagerOpen(true)} variant="outline" size="icon" title="إدارة الأقسام">
                 <FolderTree className="h-5 w-5" />
               </Button>
+              <Button onClick={() => setQuickAddModeOpen(true)} variant="outline" size="icon" title="وضع الإضافة السريعة">
+                <Zap className="h-5 w-5" />
+              </Button>
               <Button onClick={handleCopyAllTasks} variant="outline" size="icon" title="نسخ جميع المهام">
                 <Copy className="h-5 w-5" />
+              </Button>
+              <Button onClick={handleDeleteAllData} variant="outline" size="icon" title="حذف جميع البيانات" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                <Trash2 className="h-5 w-5" />
               </Button>
               <Button onClick={() => setExportModalOpen(true)} variant="outline" size="icon" title="تصدير المهام">
                 <Download className="h-5 w-5" />
@@ -1141,6 +1238,14 @@ export default function Index() {
         onDuplicateBoard={handleDuplicateBoard}
         onArchiveBoard={handleArchiveBoard}
         onToggleFavorite={handleToggleFavorite}
+      />
+      <QuickAddMode
+        isOpen={quickAddModeOpen}
+        onClose={() => setQuickAddModeOpen(false)}
+        boards={boards}
+        onAddBoard={handleAddBoard}
+        onAddTask={handleSaveTask}
+        onAddSubBoard={handleAddSubBoard}
       />
     </div>
   );
