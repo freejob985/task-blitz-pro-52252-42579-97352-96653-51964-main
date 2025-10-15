@@ -120,6 +120,12 @@ export function TaskEditModal({
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && title.trim()) {
+                  e.preventDefault();
+                  handleSave();
+                }
+              }}
               placeholder="أدخل عنوان المهمة"
               dir="rtl"
             />

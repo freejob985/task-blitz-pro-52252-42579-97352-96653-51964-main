@@ -303,12 +303,19 @@ export function BoardColumn({
 
           {/* عرض الأقسام الفرعية */}
           {!board.parentId && !hiddenSubBoards.has(board.id) && (
-            <div className="space-y-4 mt-12">
-              <div className="flex items-center gap-2 mb-8">
-                <h3 className="font-cairo font-semibold text-lg text-muted-foreground">
-                  الأقسام الفرعية
-                </h3>
-                <Badge variant="outline" className="text-xs">
+            <div className="space-y-4 mt-16">
+              {/* خط فاصل بصري للأقسام الفرعية */}
+              <div className="flex items-center justify-center py-6 mb-8">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent"></div>
+                <div className="px-6 py-2 bg-gradient-to-r from-accent/10 to-primary/10 rounded-full border border-accent/30 shadow-sm">
+                  <h3 className="font-cairo font-bold text-lg text-accent">
+                    الأقسام الفرعية
+                  </h3>
+                </div>
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent"></div>
+              </div>
+              <div className="flex items-center justify-center mb-6">
+                <Badge variant="outline" className="text-sm bg-accent/5 text-accent border-accent/30">
                   {boards.filter(subBoard => subBoard.parentId === board.id).length} قسم فرعي
                 </Badge>
               </div>

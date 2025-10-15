@@ -880,11 +880,11 @@ export function TableView(props: DefaultViewProps) {
         </div>
       </div>
 
-      {/* خط فاصل بصري */}
-      <div className="flex items-center justify-center py-8">
+      {/* خط فاصل بصري مع تباعد أكبر */}
+      <div className="flex items-center justify-center py-12">
         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
-        <div className="px-6 py-2 bg-muted/50 rounded-full border border-border/50">
-          <span className="text-sm font-medium text-muted-foreground">الأقسام الفرعية</span>
+        <div className="px-8 py-3 bg-gradient-to-r from-accent/10 to-primary/10 rounded-full border-2 border-accent/30 shadow-lg">
+          <span className="text-base font-bold text-accent">الأقسام الفرعية</span>
         </div>
         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
       </div>

@@ -38,6 +38,12 @@ export function QuickAddMode({
   const [subBoardTitle, setSubBoardTitle] = useState('');
   const [subBoardParentId, setSubBoardParentId] = useState('');
   const [subBoardColor, setSubBoardColor] = useState('#8b5cf6');
+  
+  // متغيرات للإضافة المتعددة
+  const [multipleMode, setMultipleMode] = useState(false);
+  const [taskTitles, setTaskTitles] = useState<string[]>(['']);
+  const [boardTitles, setBoardTitles] = useState<string[]>(['']);
+  const [subBoardTitles, setSubBoardTitles] = useState<string[]>(['']);
   const [recentlyAdded, setRecentlyAdded] = useState<Array<{type: string, title: string, id: string}>>([]);
 
   const mainBoards = boards.filter(board => !board.parentId);
@@ -77,6 +83,33 @@ export function QuickAddMode({
     setTaskPriority('medium');
   };
 
+  const handleAddMultipleTasks = () => {
+    const validTitles = taskTitles.filter(title => title.trim());
+    if (validTitles.length === 0 || !taskBoardId) return;
+
+    validTitles.forEach(title => {
+      const newTask: Task = {
+        id: `task-${Date.now()}-${Math.random()}`,
+        title: title.trim(),
+        description: taskDescription.trim() || undefined,
+        status: 'waiting',
+        priority: taskPriority,
+        tags: [],
+        boardId: taskBoardId,
+        createdAt: new Date().toISOString(),
+        order: 0,
+      };
+
+      onAddTask(newTask);
+      setRecentlyAdded(prev => [...prev, { type: 'مهمة', title: title.trim(), id: newTask.id }]);
+    });
+    
+    // إعادة تعيين النموذج
+    setTaskTitles(['']);
+    setTaskDescription('');
+    setTaskPriority('medium');
+  };
+
   const handleAddBoard = () => {
     if (!boardTitle.trim()) return;
 
@@ -98,6 +131,30 @@ export function QuickAddMode({
     setBoardColor('#3b82f6');
   };
 
+  const handleAddMultipleBoards = () => {
+    const validTitles = boardTitles.filter(title => title.trim());
+    if (validTitles.length === 0) return;
+
+    validTitles.forEach((title, index) => {
+      const newBoard: Board = {
+        id: `board-${Date.now()}-${index}`,
+        title: title.trim(),
+        description: boardDescription.trim() || undefined,
+        order: boards.length + index,
+        createdAt: new Date().toISOString(),
+        color: boardColor,
+      };
+
+      onAddBoard(newBoard);
+      setRecentlyAdded(prev => [...prev, { type: 'قسم', title: title.trim(), id: newBoard.id }]);
+    });
+    
+    // إعادة تعيين النموذج
+    setBoardTitles(['']);
+    setBoardDescription('');
+    setBoardColor('#3b82f6');
+  };
+
   const handleAddSubBoard = () => {
     if (!subBoardTitle.trim() || !subBoardParentId) return;
 
@@ -109,8 +166,71 @@ export function QuickAddMode({
     setSubBoardColor('#8b5cf6');
   };
 
+  const handleAddMultipleSubBoards = () => {
+    const validTitles = subBoardTitles.filter(title => title.trim());
+    if (validTitles.length === 0 || !subBoardParentId) return;
+
+    validTitles.forEach((title, index) => {
+      onAddSubBoard(subBoardParentId, title.trim());
+      setRecentlyAdded(prev => [...prev, { type: 'قسم فرعي', title: title.trim(), id: `sub-${Date.now()}-${index}` }]);
+    });
+    
+    // إعادة تعيين النموذج
+    setSubBoardTitles(['']);
+    setSubBoardColor('#8b5cf6');
+  };
+
   const clearRecentlyAdded = () => {
     setRecentlyAdded([]);
+  };
+
+  // دوال إدارة الإدخالات المتعددة
+  const addTaskInput = () => {
+    setTaskTitles([...taskTitles, '']);
+  };
+
+  const removeTaskInput = (index: number) => {
+    if (taskTitles.length > 1) {
+      setTaskTitles(taskTitles.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateTaskTitle = (index: number, value: string) => {
+    const newTitles = [...taskTitles];
+    newTitles[index] = value;
+    setTaskTitles(newTitles);
+  };
+
+  const addBoardInput = () => {
+    setBoardTitles([...boardTitles, '']);
+  };
+
+  const removeBoardInput = (index: number) => {
+    if (boardTitles.length > 1) {
+      setBoardTitles(boardTitles.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateBoardTitle = (index: number, value: string) => {
+    const newTitles = [...boardTitles];
+    newTitles[index] = value;
+    setBoardTitles(newTitles);
+  };
+
+  const addSubBoardInput = () => {
+    setSubBoardTitles([...subBoardTitles, '']);
+  };
+
+  const removeSubBoardInput = (index: number) => {
+    if (subBoardTitles.length > 1) {
+      setSubBoardTitles(subBoardTitles.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateSubBoardTitle = (index: number, value: string) => {
+    const newTitles = [...subBoardTitles];
+    newTitles[index] = value;
+    setSubBoardTitles(newTitles);
   };
 
   if (!isOpen) return null;
@@ -172,21 +292,86 @@ export function QuickAddMode({
               </Button>
             </div>
 
+            {/* تبديل وضع الإضافة المتعددة */}
+            <div className="flex items-center justify-center mb-6">
+              <Button
+                variant={multipleMode ? 'default' : 'outline'}
+                onClick={() => setMultipleMode(!multipleMode)}
+                className="gap-2"
+              >
+                <Layers className="h-4 w-4" />
+                {multipleMode ? 'وضع الإضافة المتعددة' : 'وضع الإضافة المفردة'}
+              </Button>
+            </div>
+
             <div className="flex-1 overflow-y-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* النموذج */}
                 <div className="space-y-6">
                   {activeTab === 'task' && (
                     <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">عنوان المهمة *</label>
-                        <Input
-                          value={taskTitle}
-                          onChange={(e) => setTaskTitle(e.target.value)}
-                          placeholder="أدخل عنوان المهمة..."
-                          className="text-right"
-                        />
-                      </div>
+                      {multipleMode ? (
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-medium">عناوين المهام *</label>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={addTaskInput}
+                              className="gap-1"
+                            >
+                              <Plus className="h-3 w-3" />
+                              إضافة سطر
+                            </Button>
+                          </div>
+                          <div className="space-y-2">
+                            {taskTitles.map((title, index) => (
+                              <div key={index} className="flex gap-2">
+                                <Input
+                                  value={title}
+                                  onChange={(e) => updateTaskTitle(index, e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && title.trim() && taskBoardId) {
+                                      e.preventDefault();
+                                      handleAddMultipleTasks();
+                                    }
+                                  }}
+                                  placeholder={`مهمة ${index + 1}...`}
+                                  className="text-right flex-1"
+                                />
+                                {taskTitles.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeTaskInput(index)}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">عنوان المهمة *</label>
+                          <Input
+                            value={taskTitle}
+                            onChange={(e) => setTaskTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && taskTitle.trim() && taskBoardId) {
+                                e.preventDefault();
+                                handleAddTask();
+                              }
+                            }}
+                            placeholder="أدخل عنوان المهمة..."
+                            className="text-right"
+                          />
+                        </div>
+                      )}
                       
                       <div>
                         <label className="text-sm font-medium mb-2 block">وصف المهمة</label>
@@ -236,27 +421,84 @@ export function QuickAddMode({
                       </div>
 
                       <Button
-                        onClick={handleAddTask}
-                        disabled={!taskTitle.trim() || !taskBoardId}
+                        onClick={multipleMode ? handleAddMultipleTasks : handleAddTask}
+                        disabled={
+                          multipleMode 
+                            ? (taskTitles.filter(t => t.trim()).length === 0 || !taskBoardId)
+                            : (!taskTitle.trim() || !taskBoardId)
+                        }
                         className="w-full gap-2"
                       >
                         <Save className="h-4 w-4" />
-                        إضافة المهمة
+                        {multipleMode ? `إضافة ${taskTitles.filter(t => t.trim()).length} مهمة` : 'إضافة المهمة'}
                       </Button>
                     </div>
                   )}
 
                   {activeTab === 'board' && (
                     <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">اسم القسم *</label>
-                        <Input
-                          value={boardTitle}
-                          onChange={(e) => setBoardTitle(e.target.value)}
-                          placeholder="أدخل اسم القسم..."
-                          className="text-right"
-                        />
-                      </div>
+                      {multipleMode ? (
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-medium">أسماء الأقسام *</label>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={addBoardInput}
+                              className="gap-1"
+                            >
+                              <Plus className="h-3 w-3" />
+                              إضافة سطر
+                            </Button>
+                          </div>
+                          <div className="space-y-2">
+                            {boardTitles.map((title, index) => (
+                              <div key={index} className="flex gap-2">
+                                <Input
+                                  value={title}
+                                  onChange={(e) => updateBoardTitle(index, e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && title.trim()) {
+                                      e.preventDefault();
+                                      handleAddMultipleBoards();
+                                    }
+                                  }}
+                                  placeholder={`قسم ${index + 1}...`}
+                                  className="text-right flex-1"
+                                />
+                                {boardTitles.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeBoardInput(index)}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">اسم القسم *</label>
+                          <Input
+                            value={boardTitle}
+                            onChange={(e) => setBoardTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && boardTitle.trim()) {
+                                e.preventDefault();
+                                handleAddBoard();
+                              }
+                            }}
+                            placeholder="أدخل اسم القسم..."
+                            className="text-right"
+                          />
+                        </div>
+                      )}
                       
                       <div>
                         <label className="text-sm font-medium mb-2 block">وصف القسم</label>
@@ -287,27 +529,84 @@ export function QuickAddMode({
                       </div>
 
                       <Button
-                        onClick={handleAddBoard}
-                        disabled={!boardTitle.trim()}
+                        onClick={multipleMode ? handleAddMultipleBoards : handleAddBoard}
+                        disabled={
+                          multipleMode 
+                            ? (boardTitles.filter(t => t.trim()).length === 0)
+                            : (!boardTitle.trim())
+                        }
                         className="w-full gap-2"
                       >
                         <Save className="h-4 w-4" />
-                        إضافة القسم
+                        {multipleMode ? `إضافة ${boardTitles.filter(t => t.trim()).length} قسم` : 'إضافة القسم'}
                       </Button>
                     </div>
                   )}
 
                   {activeTab === 'subboard' && (
                     <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">اسم القسم الفرعي *</label>
-                        <Input
-                          value={subBoardTitle}
-                          onChange={(e) => setSubBoardTitle(e.target.value)}
-                          placeholder="أدخل اسم القسم الفرعي..."
-                          className="text-right"
-                        />
-                      </div>
+                      {multipleMode ? (
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-medium">أسماء الأقسام الفرعية *</label>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={addSubBoardInput}
+                              className="gap-1"
+                            >
+                              <Plus className="h-3 w-3" />
+                              إضافة سطر
+                            </Button>
+                          </div>
+                          <div className="space-y-2">
+                            {subBoardTitles.map((title, index) => (
+                              <div key={index} className="flex gap-2">
+                                <Input
+                                  value={title}
+                                  onChange={(e) => updateSubBoardTitle(index, e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && title.trim() && subBoardParentId) {
+                                      e.preventDefault();
+                                      handleAddMultipleSubBoards();
+                                    }
+                                  }}
+                                  placeholder={`قسم فرعي ${index + 1}...`}
+                                  className="text-right flex-1"
+                                />
+                                {subBoardTitles.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeSubBoardInput(index)}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">اسم القسم الفرعي *</label>
+                          <Input
+                            value={subBoardTitle}
+                            onChange={(e) => setSubBoardTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && subBoardTitle.trim() && subBoardParentId) {
+                                e.preventDefault();
+                                handleAddSubBoard();
+                              }
+                            }}
+                            placeholder="أدخل اسم القسم الفرعي..."
+                            className="text-right"
+                          />
+                        </div>
+                      )}
 
                       <div>
                         <label className="text-sm font-medium mb-2 block">القسم الرئيسي *</label>
@@ -342,12 +641,16 @@ export function QuickAddMode({
                       </div>
 
                       <Button
-                        onClick={handleAddSubBoard}
-                        disabled={!subBoardTitle.trim() || !subBoardParentId}
+                        onClick={multipleMode ? handleAddMultipleSubBoards : handleAddSubBoard}
+                        disabled={
+                          multipleMode 
+                            ? (subBoardTitles.filter(t => t.trim()).length === 0 || !subBoardParentId)
+                            : (!subBoardTitle.trim() || !subBoardParentId)
+                        }
                         className="w-full gap-2"
                       >
                         <Save className="h-4 w-4" />
-                        إضافة القسم الفرعي
+                        {multipleMode ? `إضافة ${subBoardTitles.filter(t => t.trim()).length} قسم فرعي` : 'إضافة القسم الفرعي'}
                       </Button>
                     </div>
                   )}
@@ -432,15 +735,28 @@ export function QuickAddMode({
               </Button>
               <Button
                 onClick={() => {
-                  if (activeTab === 'task') handleAddTask();
-                  else if (activeTab === 'board') handleAddBoard();
-                  else if (activeTab === 'subboard') handleAddSubBoard();
+                  if (activeTab === 'task') {
+                    if (multipleMode) handleAddMultipleTasks();
+                    else handleAddTask();
+                  } else if (activeTab === 'board') {
+                    if (multipleMode) handleAddMultipleBoards();
+                    else handleAddBoard();
+                  } else if (activeTab === 'subboard') {
+                    if (multipleMode) handleAddMultipleSubBoards();
+                    else handleAddSubBoard();
+                  }
                 }}
                 className="flex-1 gap-2"
                 disabled={
-                  (activeTab === 'task' && (!taskTitle.trim() || !taskBoardId)) ||
-                  (activeTab === 'board' && !boardTitle.trim()) ||
-                  (activeTab === 'subboard' && (!subBoardTitle.trim() || !subBoardParentId))
+                  multipleMode ? (
+                    (activeTab === 'task' && (taskTitles.filter(t => t.trim()).length === 0 || !taskBoardId)) ||
+                    (activeTab === 'board' && boardTitles.filter(t => t.trim()).length === 0) ||
+                    (activeTab === 'subboard' && (subBoardTitles.filter(t => t.trim()).length === 0 || !subBoardParentId))
+                  ) : (
+                    (activeTab === 'task' && (!taskTitle.trim() || !taskBoardId)) ||
+                    (activeTab === 'board' && !boardTitle.trim()) ||
+                    (activeTab === 'subboard' && (!subBoardTitle.trim() || !subBoardParentId))
+                  )
                 }
               >
                 <Save className="h-4 w-4" />
