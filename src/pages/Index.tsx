@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { Plus, Timer, Download, Upload, Moon, Sun, Layers, Settings2, Smartphone, Copy, Bell, BellOff, Archive, FolderTree, Zap, Trash2 } from 'lucide-react';
+import { Plus, Timer, Download, Upload, Moon, Sun, Layers, Settings2, Smartphone, Copy, Bell, BellOff, Archive, FolderTree, Zap, Trash2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BoardColumn } from '@/components/BoardColumn';
 import { TaskEditModal } from '@/components/TaskEditModal';
@@ -78,10 +78,19 @@ export default function Index() {
     return (saved as ViewMode) || 'default';
   });
   const [quickAddModeOpen, setQuickAddModeOpen] = useState(false);
+  const [showCompletedTasks, setShowCompletedTasks] = useState(() => {
+    const saved = localStorage.getItem('show-completed-tasks');
+    return saved ? JSON.parse(saved) : true;
+  });
 
   useEffect(() => {
-    initDB().then(() => {
+    initDB().then(async () => {
       loadData();
+      // Load completed tasks visibility setting from database
+      const settings = await getSettings();
+      if (settings?.showCompletedTasks !== undefined) {
+        setShowCompletedTasks(settings.showCompletedTasks);
+      }
       setIsLoading(false);
     });
     // التحقق من تثبيت التطبيق
@@ -280,6 +289,35 @@ export default function Index() {
       const isSubBoard = destBoard.parentId ? 'قسم فرعي' : 'قسم رئيسي';
       showToast(`تم نقل المهمة إلى ${destBoard.title} (${isSubBoard})`, 'success');
     }
+  };
+
+  const handleAddTask = async (taskData: Partial<Task>) => {
+    if (!taskData.title?.trim()) {
+      showToast('عنوان المهمة مطلوب', 'error');
+      return;
+    }
+    if (!taskData.boardId) {
+      showToast('يجب اختيار قسم للمهمة', 'error');
+      return;
+    }
+    
+    const newTask: Task = {
+      id: `task-${Date.now()}`,
+      title: taskData.title.trim(),
+      description: taskData.description,
+      status: taskData.status || 'waiting',
+      priority: taskData.priority || 'medium',
+      tags: taskData.tags || [],
+      dueDate: taskData.dueDate,
+      boardId: taskData.boardId,
+      createdAt: new Date().toISOString(),
+      order: tasks.length,
+    };
+    
+    setTasks([...tasks, newTask]);
+    await saveTask(newTask);
+    await playSound('create');
+    showToast('تم إضافة المهمة بنجاح', 'success');
   };
 
   const handleSaveTask = async (taskData: Partial<Task>) => {
@@ -561,6 +599,21 @@ export default function Index() {
     });
   };
 
+  const handleToggleCompletedTasks = async () => {
+    const newValue = !showCompletedTasks;
+    setShowCompletedTasks(newValue);
+    localStorage.setItem('show-completed-tasks', JSON.stringify(newValue));
+    
+    // Save to database settings
+    const settings = await getSettings();
+    if (settings) {
+      await saveSettings({
+        ...settings,
+        showCompletedTasks: newValue,
+      });
+    }
+  };
+
   const handleFocusOnBoard = (boardId: string) => {
     if (focusedBoardId === boardId) {
       setFocusedBoardId(null);
@@ -774,6 +827,9 @@ export default function Index() {
       if (!taskBoard || !taskBoard.isFavorite) return false;
     }
     
+    // Completed tasks filter
+    if (!showCompletedTasks && t.status === 'completed') return false;
+    
     return true;
   });
 
@@ -884,6 +940,23 @@ export default function Index() {
             currentMode={viewMode} 
             onModeChange={setViewMode} 
           />
+        </div>
+
+        {/* تبديل إظهار المهام المكتملة */}
+        <div className="mb-6 flex items-center justify-center">
+          <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+            <Button
+              variant={showCompletedTasks ? "default" : "outline"}
+              onClick={handleToggleCompletedTasks}
+              className="gap-2"
+            >
+              <CheckCircle className="h-4 w-4" />
+              {showCompletedTasks ? 'إظهار المهام المكتملة' : 'إخفاء المهام المكتملة'}
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {showCompletedTasks ? 'المهام المكتملة ظاهرة' : 'المهام المكتملة مخفية'}
+            </span>
+          </div>
         </div>
 
         {/* عرض الأقسام حسب طريقة العرض المختارة */}
@@ -1004,6 +1077,7 @@ export default function Index() {
                 onFocusOnBoard={handleFocusOnBoard}
                 hiddenSubBoards={hiddenSubBoards}
                 focusedBoardId={focusedBoardId}
+                showCompletedTasks={showCompletedTasks}
               />
             )}
             
@@ -1045,6 +1119,7 @@ export default function Index() {
                 onFocusOnBoard={handleFocusOnBoard}
                 hiddenSubBoards={hiddenSubBoards}
                 focusedBoardId={focusedBoardId}
+                showCompletedTasks={showCompletedTasks}
               />
             )}
             
@@ -1086,6 +1161,7 @@ export default function Index() {
                 onFocusOnBoard={handleFocusOnBoard}
                 hiddenSubBoards={hiddenSubBoards}
                 focusedBoardId={focusedBoardId}
+                showCompletedTasks={showCompletedTasks}
               />
             )}
             
@@ -1127,6 +1203,7 @@ export default function Index() {
                 onFocusOnBoard={handleFocusOnBoard}
                 hiddenSubBoards={hiddenSubBoards}
                 focusedBoardId={focusedBoardId}
+                showCompletedTasks={showCompletedTasks}
               />
             )}
             
@@ -1168,6 +1245,7 @@ export default function Index() {
                 onFocusOnBoard={handleFocusOnBoard}
                 hiddenSubBoards={hiddenSubBoards}
                 focusedBoardId={focusedBoardId}
+                showCompletedTasks={showCompletedTasks}
               />
             )}
             
@@ -1209,6 +1287,7 @@ export default function Index() {
                 onFocusOnBoard={handleFocusOnBoard}
                 hiddenSubBoards={hiddenSubBoards}
                 focusedBoardId={focusedBoardId}
+                showCompletedTasks={showCompletedTasks}
               />
               )}
             </div>
@@ -1244,7 +1323,7 @@ export default function Index() {
         onClose={() => setQuickAddModeOpen(false)}
         boards={boards}
         onAddBoard={handleAddBoard}
-        onAddTask={handleSaveTask}
+        onAddTask={handleAddTask}
         onAddSubBoard={handleAddSubBoard}
       />
     </div>

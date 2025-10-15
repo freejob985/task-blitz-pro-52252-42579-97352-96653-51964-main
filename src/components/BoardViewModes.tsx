@@ -73,6 +73,7 @@ interface DefaultViewProps {
   onFocusOnBoard: (boardId: string) => void;
   hiddenSubBoards: Set<string>;
   focusedBoardId?: string | null;
+  showCompletedTasks?: boolean;
 }
 
 export function DefaultView(props: DefaultViewProps) {
@@ -114,6 +115,9 @@ export function GridView(props: DefaultViewProps) {
         .filter(board => !board.parentId)
         .map((board) => {
           const boardTasks = props.tasks.filter(t => t.boardId === board.id);
+          const filteredTasks = props.showCompletedTasks === false 
+            ? boardTasks.filter(t => t.status !== 'completed')
+            : boardTasks;
           const completedCount = boardTasks.filter(t => t.status === 'completed').length;
           const progress = boardTasks.length > 0 ? (completedCount / boardTasks.length) * 100 : 0;
 
@@ -153,7 +157,7 @@ export function GridView(props: DefaultViewProps) {
                       snapshot.isDraggingOver ? 'bg-primary/10 ring-2 ring-primary/30' : ''
                     }`}
                   >
-                    {boardTasks.map((task, index) => (
+                    {filteredTasks.map((task, index) => (
                       <Draggable key={task.id} draggableId={task.id} index={index}>
                         {(provided, snapshot) => (
                           <div
@@ -257,6 +261,9 @@ export function ListView(props: DefaultViewProps) {
         .filter(board => !board.parentId)
         .map((board) => {
           const boardTasks = props.tasks.filter(t => t.boardId === board.id);
+          const filteredTasks = props.showCompletedTasks === false 
+            ? boardTasks.filter(t => t.status !== 'completed')
+            : boardTasks;
           const completedCount = boardTasks.filter(t => t.status === 'completed').length;
           const progress = boardTasks.length > 0 ? (completedCount / boardTasks.length) * 100 : 0;
 
@@ -356,7 +363,7 @@ export function ListView(props: DefaultViewProps) {
 
               {/* عرض المهام */}
               <div className="p-8">
-                {boardTasks.length > 0 ? (
+                {filteredTasks.length > 0 ? (
                   <Droppable droppableId={board.id} type="task">
                     {(provided, snapshot) => (
                       <div
@@ -366,7 +373,7 @@ export function ListView(props: DefaultViewProps) {
                           snapshot.isDraggingOver ? 'bg-primary/10 ring-2 ring-primary/30' : ''
                         }`}
                       >
-                        {boardTasks.map((task, index) => (
+                        {filteredTasks.map((task, index) => (
                           <Draggable key={task.id} draggableId={task.id} index={index}>
                             {(provided, snapshot) => (
                               <div
@@ -504,7 +511,11 @@ export function CalendarView(props: DefaultViewProps) {
   }
 
   // تجميع المهام حسب التاريخ
-  const tasksByDate = props.tasks.reduce((acc, task) => {
+  const filteredTasks = props.showCompletedTasks === false 
+    ? props.tasks.filter(t => t.status !== 'completed')
+    : props.tasks;
+  
+  const tasksByDate = filteredTasks.reduce((acc, task) => {
     if (task.dueDate) {
       const date = new Date(task.dueDate);
       const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
@@ -657,10 +668,14 @@ export function KanbanView(props: DefaultViewProps) {
     'completed': 'مكتملة'
   };
 
+  const filteredTasks = props.showCompletedTasks === false 
+    ? props.tasks.filter(t => t.status !== 'completed')
+    : props.tasks;
+
   return (
     <div className="flex gap-8 overflow-x-auto pb-8 p-4">
       {statuses.map(status => {
-        const statusTasks = props.tasks.filter(task => task.status === status);
+        const statusTasks = filteredTasks.filter(task => task.status === status);
         return (
           <div key={status} className="flex-shrink-0 w-80">
             <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 p-6">
@@ -777,6 +792,10 @@ export function TableView(props: DefaultViewProps) {
   const [showMainSections, setShowMainSections] = useState(true);
   const [showSubSections, setShowSubSections] = useState(true);
   const [showAllTasks, setShowAllTasks] = useState(true);
+
+  const filteredTasks = props.showCompletedTasks === false 
+    ? props.tasks.filter(t => t.status !== 'completed')
+    : props.tasks;
 
   return (
     <div className="space-y-16 p-4">
@@ -1064,7 +1083,7 @@ export function TableView(props: DefaultViewProps) {
             </div>
             <h3 className="font-bold text-2xl text-foreground">جميع المهام</h3>
             <Badge variant="outline" className="text-sm">
-              {props.tasks.length} مهمة
+              {filteredTasks.length} مهمة
             </Badge>
           </div>
         </div>
@@ -1081,7 +1100,7 @@ export function TableView(props: DefaultViewProps) {
               </tr>
             </thead>
             <tbody>
-              {props.tasks.map((task) => {
+              {filteredTasks.map((task) => {
                 const board = props.boards.find(b => b.id === task.boardId);
                 return (
                   <tr key={task.id} className="border-t hover:bg-muted/50 transition-colors">
@@ -1202,10 +1221,14 @@ export function TableView(props: DefaultViewProps) {
 
 // مكون الرسوم البيانية
 export function ChartView(props: DefaultViewProps) {
+  const filteredTasks = props.showCompletedTasks === false 
+    ? props.tasks.filter(t => t.status !== 'completed')
+    : props.tasks;
+
   const boardStats = props.boards
     .filter(board => !board.parentId)
     .map(board => {
-      const boardTasks = props.tasks.filter(t => t.boardId === board.id);
+      const boardTasks = filteredTasks.filter(t => t.boardId === board.id);
       const completedCount = boardTasks.filter(t => t.status === 'completed').length;
       const inProgressCount = boardTasks.filter(t => t.status === 'working').length;
       const waitingCount = boardTasks.filter(t => t.status === 'waiting').length;
@@ -1220,10 +1243,10 @@ export function ChartView(props: DefaultViewProps) {
       };
     });
 
-  const totalTasks = props.tasks.length;
-  const totalCompleted = props.tasks.filter(t => t.status === 'completed').length;
-  const totalInProgress = props.tasks.filter(t => t.status === 'working').length;
-  const totalWaiting = props.tasks.filter(t => t.status === 'waiting').length;
+  const totalTasks = filteredTasks.length;
+  const totalCompleted = filteredTasks.filter(t => t.status === 'completed').length;
+  const totalInProgress = filteredTasks.filter(t => t.status === 'working').length;
+  const totalWaiting = filteredTasks.filter(t => t.status === 'waiting').length;
   const overallProgress = totalTasks > 0 ? (totalCompleted / totalTasks) * 100 : 0;
 
   return (
@@ -1344,7 +1367,7 @@ export function ChartView(props: DefaultViewProps) {
       <div className="bg-gradient-to-br from-card to-card/80 p-8 rounded-2xl border-2 border-border/50 shadow-lg">
         <h3 className="font-bold text-2xl mb-8 text-foreground">المهام الأخيرة</h3>
         <div className="space-y-4">
-          {props.tasks.slice(0, 5).map((task) => {
+          {filteredTasks.slice(0, 5).map((task) => {
             const board = props.boards.find(b => b.id === task.boardId);
             return (
               <div key={task.id} className="flex items-center gap-5 p-5 bg-gradient-to-r from-muted/20 to-muted/40 rounded-xl hover:bg-muted/60 transition-all duration-200">
@@ -1381,7 +1404,7 @@ export function ChartView(props: DefaultViewProps) {
               </div>
             );
           })}
-          {props.tasks.length === 0 && (
+          {filteredTasks.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <p className="text-sm">لا توجد مهام</p>
               <p className="text-xs mt-1">قم بإنشاء مهمة جديدة لبدء العمل</p>

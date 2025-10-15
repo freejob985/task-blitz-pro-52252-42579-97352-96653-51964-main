@@ -50,6 +50,7 @@ export interface AppSettings {
   notificationsEnabled: boolean;
   theme: 'light' | 'dark';
   currentSound: string;
+  showCompletedTasks?: boolean;
 }
 
 export interface AppData {

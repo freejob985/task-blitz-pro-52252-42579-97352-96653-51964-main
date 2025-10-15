@@ -60,6 +60,7 @@ export async function initDB(): Promise<void> {
         notificationsEnabled: true,
         theme: 'light',
         currentSound: 'default',
+        showCompletedTasks: true,
       });
     }
   } catch (error) {
@@ -336,6 +337,7 @@ export async function exportAllData(): Promise<AppData> {
       notificationsEnabled: true,
       theme: 'light',
       currentSound: 'default',
+      showCompletedTasks: true,
     },
     focusSessions: sessions,
   };

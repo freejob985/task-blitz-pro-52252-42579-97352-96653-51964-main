@@ -59,7 +59,12 @@ export function QuickAddMode({
   }, [isOpen, mainBoards]);
 
   const handleAddTask = () => {
-    if (!taskTitle.trim() || !taskBoardId) return;
+    if (!taskTitle.trim()) {
+      return;
+    }
+    if (!taskBoardId) {
+      return;
+    }
 
     const newTask: Task = {
       id: `task-${Date.now()}`,
