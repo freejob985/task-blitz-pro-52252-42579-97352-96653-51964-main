@@ -29,7 +29,6 @@ export function QuickAddMode({
 }: QuickAddModeProps) {
   const [activeTab, setActiveTab] = useState<'task' | 'board' | 'subboard'>('task');
   const [taskTitle, setTaskTitle] = useState('');
-  const [taskDescription, setTaskDescription] = useState('');
   const [taskBoardId, setTaskBoardId] = useState('');
   const [taskPriority, setTaskPriority] = useState<'high' | 'medium' | 'low'>('medium');
   const [boardTitle, setBoardTitle] = useState('');
@@ -65,7 +64,6 @@ export function QuickAddMode({
     const newTask: Task = {
       id: `task-${Date.now()}`,
       title: taskTitle.trim(),
-      description: taskDescription.trim() || undefined,
       status: 'waiting',
       priority: taskPriority,
       tags: [],
@@ -79,7 +77,6 @@ export function QuickAddMode({
     
     // إعادة تعيين النموذج
     setTaskTitle('');
-    setTaskDescription('');
     setTaskPriority('medium');
   };
 
@@ -91,7 +88,6 @@ export function QuickAddMode({
       const newTask: Task = {
         id: `task-${Date.now()}-${Math.random()}`,
         title: title.trim(),
-        description: taskDescription.trim() || undefined,
         status: 'waiting',
         priority: taskPriority,
         tags: [],
@@ -106,7 +102,6 @@ export function QuickAddMode({
     
     // إعادة تعيين النموذج
     setTaskTitles(['']);
-    setTaskDescription('');
     setTaskPriority('medium');
   };
 
@@ -237,7 +232,7 @@ export function QuickAddMode({
 
   return (
     <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl max-h-[95vh] overflow-hidden">
+      <div className="w-full max-w-7xl max-h-[95vh] overflow-hidden">
         <Card className="h-full flex flex-col">
           <CardHeader className="flex-shrink-0 border-b">
             <div className="flex items-center justify-between">
@@ -340,15 +335,26 @@ export function QuickAddMode({
                                       e.preventDefault();
                                       const prevInput = document.querySelector(`input[data-index="${index - 1}"]`) as HTMLInputElement;
                                       prevInput?.focus();
+                                      prevInput?.select();
                                     }
                                     if (e.key === 'ArrowDown' && index < taskTitles.length - 1) {
                                       e.preventDefault();
                                       const nextInput = document.querySelector(`input[data-index="${index + 1}"]`) as HTMLInputElement;
                                       nextInput?.focus();
+                                      nextInput?.select();
+                                    }
+                                    if (e.key === 'Enter' && !title.trim()) {
+                                      e.preventDefault();
+                                      addTaskInput();
+                                      setTimeout(() => {
+                                        const nextInput = document.querySelector(`input[data-index="${taskTitles.length}"]`) as HTMLInputElement;
+                                        nextInput?.focus();
+                                      }, 0);
                                     }
                                   }}
+                                  onFocus={(e) => e.target.select()}
                                   placeholder={`مهمة ${index + 1}...`}
-                                  className="text-right flex-1 h-12 text-lg"
+                                  className="text-right flex-1 h-14 text-xl font-medium"
                                   data-index={index}
                                 />
                                 {taskTitles.length > 1 && (
@@ -379,7 +385,8 @@ export function QuickAddMode({
                               }
                             }}
                             placeholder="أدخل عنوان المهمة..."
-                            className="text-right h-14 text-xl"
+                            className="text-right h-16 text-2xl font-medium"
+                            autoFocus
                           />
                         </div>
                       )}
@@ -468,15 +475,26 @@ export function QuickAddMode({
                                       e.preventDefault();
                                       const prevInput = document.querySelector(`input[data-board-index="${index - 1}"]`) as HTMLInputElement;
                                       prevInput?.focus();
+                                      prevInput?.select();
                                     }
                                     if (e.key === 'ArrowDown' && index < boardTitles.length - 1) {
                                       e.preventDefault();
                                       const nextInput = document.querySelector(`input[data-board-index="${index + 1}"]`) as HTMLInputElement;
                                       nextInput?.focus();
+                                      nextInput?.select();
+                                    }
+                                    if (e.key === 'Enter' && !title.trim()) {
+                                      e.preventDefault();
+                                      addBoardInput();
+                                      setTimeout(() => {
+                                        const nextInput = document.querySelector(`input[data-board-index="${boardTitles.length}"]`) as HTMLInputElement;
+                                        nextInput?.focus();
+                                      }, 0);
                                     }
                                   }}
+                                  onFocus={(e) => e.target.select()}
                                   placeholder={`قسم ${index + 1}...`}
-                                  className="text-right flex-1 h-12 text-lg"
+                                  className="text-right flex-1 h-14 text-xl font-medium"
                                   data-board-index={index}
                                 />
                                 {boardTitles.length > 1 && (
@@ -507,7 +525,8 @@ export function QuickAddMode({
                               }
                             }}
                             placeholder="أدخل اسم القسم..."
-                            className="text-right h-14 text-xl"
+                            className="text-right h-16 text-2xl font-medium"
+                            autoFocus
                           />
                         </div>
                       )}
@@ -577,15 +596,26 @@ export function QuickAddMode({
                                       e.preventDefault();
                                       const prevInput = document.querySelector(`input[data-subboard-index="${index - 1}"]`) as HTMLInputElement;
                                       prevInput?.focus();
+                                      prevInput?.select();
                                     }
                                     if (e.key === 'ArrowDown' && index < subBoardTitles.length - 1) {
                                       e.preventDefault();
                                       const nextInput = document.querySelector(`input[data-subboard-index="${index + 1}"]`) as HTMLInputElement;
                                       nextInput?.focus();
+                                      nextInput?.select();
+                                    }
+                                    if (e.key === 'Enter' && !title.trim()) {
+                                      e.preventDefault();
+                                      addSubBoardInput();
+                                      setTimeout(() => {
+                                        const nextInput = document.querySelector(`input[data-subboard-index="${subBoardTitles.length}"]`) as HTMLInputElement;
+                                        nextInput?.focus();
+                                      }, 0);
                                     }
                                   }}
+                                  onFocus={(e) => e.target.select()}
                                   placeholder={`قسم فرعي ${index + 1}...`}
-                                  className="text-right flex-1 h-12 text-lg"
+                                  className="text-right flex-1 h-14 text-xl font-medium"
                                   data-subboard-index={index}
                                 />
                                 {subBoardTitles.length > 1 && (
@@ -616,7 +646,8 @@ export function QuickAddMode({
                               }
                             }}
                             placeholder="أدخل اسم القسم الفرعي..."
-                            className="text-right h-14 text-xl"
+                            className="text-right h-16 text-2xl font-medium"
+                            autoFocus
                           />
                         </div>
                       )}

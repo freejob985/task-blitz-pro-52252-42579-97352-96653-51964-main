@@ -809,7 +809,7 @@ export function TableView(props: DefaultViewProps) {
       </div>
       {/* جدول الأقسام الرئيسية */}
       {showMainSections && (
-        <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-primary/30 shadow-xl overflow-hidden ring-2 ring-primary/10">
+        <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-primary/30 shadow-xl overflow-hidden ring-2 ring-primary/10 mb-16">
         <div className="p-8 border-b border-primary/20 bg-gradient-to-r from-primary/10 to-accent/10">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-primary/20 rounded-xl ring-2 ring-primary/20">
@@ -920,7 +920,7 @@ export function TableView(props: DefaultViewProps) {
       )}
 
       {/* خط فاصل بصري مع تباعد أكبر */}
-      <div className="flex items-center justify-center py-16">
+      <div className="flex items-center justify-center py-24">
         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
         <div className="px-8 py-4 bg-gradient-to-r from-accent/10 to-primary/10 rounded-full border-2 border-accent/30 shadow-lg">
           <span className="text-lg font-bold text-accent">الأقسام الفرعية</span>
@@ -930,7 +930,7 @@ export function TableView(props: DefaultViewProps) {
 
       {/* جدول الأقسام الفرعية */}
       {showSubSections && props.boards.filter(board => board.parentId).length > 0 && (
-        <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-accent/30 shadow-lg overflow-hidden mt-20">
+        <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-accent/30 shadow-lg overflow-hidden mt-32">
           <div className="p-6 border-b border-accent/20 bg-gradient-to-r from-accent/10 to-primary/5">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-accent/20 rounded-lg ring-1 ring-accent/30">
@@ -1046,7 +1046,7 @@ export function TableView(props: DefaultViewProps) {
       )}
 
       {/* خط فاصل بصري */}
-      <div className="flex items-center justify-center py-8">
+      <div className="flex items-center justify-center py-16">
         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent"></div>
         <div className="px-6 py-2 bg-muted/50 rounded-full border border-border/50">
           <span className="text-sm font-medium text-muted-foreground">جميع المهام</span>
