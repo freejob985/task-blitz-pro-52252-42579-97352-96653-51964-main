@@ -250,70 +250,94 @@ export function ListView(props: DefaultViewProps) {
           return (
             <div key={board.id} className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 mb-8">
               {/* رأس القسم */}
-              <div className="flex items-center justify-between p-8 border-b border-border/50">
-                <div className="flex items-center gap-4 flex-1">
-                  {board.color && (
-                    <div 
-                      className="w-5 h-5 rounded-full shadow-sm flex-shrink-0"
-                      style={{ backgroundColor: board.color }}
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-xl text-foreground truncate">{board.title}</h3>
-                    {board.description && (
-                      <p className="text-sm text-muted-foreground truncate mt-1">
-                        {board.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-primary">{boardTasks.length}</div>
-                      <div className="text-xs text-muted-foreground">مهمة</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold text-green-600">{completedCount}</div>
-                      <div className="text-xs text-muted-foreground">مكتملة</div>
-                    </div>
-                    <div className="w-20">
-                      <div className="flex justify-between text-sm font-medium text-muted-foreground mb-2">
-                        <span>التقدم</span>
-                        <span className="text-primary font-bold">{Math.round(progress)}%</span>
-                      </div>
-                      <div className="h-3 bg-muted/50 rounded-full overflow-hidden shadow-inner">
+              <div className="relative p-8 border-b border-border/50 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
+                {/* خلفية زخرفية */}
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 dark:from-primary/10 dark:to-accent/10"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 dark:bg-primary/20 rounded-full -translate-y-16 translate-x-16"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-accent/10 dark:bg-accent/20 rounded-full translate-y-12 -translate-x-12"></div>
+                
+                {/* المحتوى */}
+                <div className="relative z-10">
+                  {/* العنوان والوصف */}
+                  <div className="flex items-start justify-between mb-8">
+                    <div className="flex items-center gap-5 flex-1">
+                      {board.color && (
                         <div 
-                          className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
-                          style={{ width: `${progress}%` }}
+                          className="w-8 h-8 rounded-full shadow-lg flex-shrink-0 ring-2 ring-white/20 dark:ring-slate-700/50"
+                          style={{ backgroundColor: board.color }}
                         />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-3xl text-slate-800 dark:text-slate-100 truncate mb-3 bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+                          {board.title}
+                        </h3>
+                        {board.description && (
+                          <p className="text-lg text-slate-600 dark:text-slate-300 truncate leading-relaxed font-medium">
+                            {board.description}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex gap-2 ml-6">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-9 text-sm px-4 hover:bg-primary/10"
-                    onClick={() => props.onAddTask(board.id)}
-                  >
-                    إضافة مهمة
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-9 text-sm px-4 hover:bg-muted/50"
-                    onClick={() => props.onEditBoard(board)}
-                  >
-                    تعديل
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-9 text-sm px-4 text-destructive hover:bg-destructive/10"
-                    onClick={() => props.onDeleteBoard(board.id)}
-                  >
-                    حذف
-                  </Button>
+
+                  {/* الإحصائيات والتقدم */}
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-10">
+                      {/* عدد المهام */}
+                      <div className="text-center bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 min-w-[100px] shadow-lg border border-white/20 dark:border-slate-700/50">
+                        <div className="text-3xl font-bold text-primary mb-2">{boardTasks.length}</div>
+                        <div className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide">مهمة</div>
+                      </div>
+
+                      {/* المهام المكتملة */}
+                      <div className="text-center bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 min-w-[100px] shadow-lg border border-white/20 dark:border-slate-700/50">
+                        <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">{completedCount}</div>
+                        <div className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide">مكتملة</div>
+                      </div>
+
+                      {/* شريط التقدم */}
+                      <div className="flex-1 max-w-[350px]">
+                        <div className="flex justify-between text-lg font-bold text-slate-700 dark:text-slate-200 mb-4">
+                          <span>التقدم</span>
+                          <span className="text-primary dark:text-primary-foreground font-black text-xl">{Math.round(progress)}%</span>
+                        </div>
+                        <div className="h-6 bg-white/60 dark:bg-slate-700/60 rounded-full overflow-hidden shadow-inner border border-white/30 dark:border-slate-600/30">
+                          <div 
+                            className="h-full bg-gradient-to-r from-primary via-primary/80 to-accent transition-all duration-1000 shadow-sm"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* الأزرار */}
+                  <div className="flex gap-4 justify-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-12 text-base px-8 hover:bg-primary/20 border-primary/40 dark:border-primary/60 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 font-semibold"
+                      onClick={() => props.onAddTask(board.id)}
+                    >
+                      إضافة مهمة
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-12 text-base px-8 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 font-semibold"
+                      onClick={() => props.onEditBoard(board)}
+                    >
+                      تعديل
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-12 text-base px-8 text-red-600 dark:text-red-400 hover:bg-red-100/80 dark:hover:bg-red-900/30 bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 font-semibold"
+                      onClick={() => props.onDeleteBoard(board.id)}
+                    >
+                      حذف
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -973,13 +997,13 @@ export function ChartView(props: DefaultViewProps) {
       </div>
 
       {/* المهام الأخيرة */}
-      <div className="bg-gradient-to-br from-card to-card/80 p-6 rounded-2xl border-2 border-border/50 shadow-lg">
-        <h3 className="font-bold text-xl mb-6 text-foreground">المهام الأخيرة</h3>
-        <div className="space-y-3">
+      <div className="bg-gradient-to-br from-card to-card/80 p-8 rounded-2xl border-2 border-border/50 shadow-lg">
+        <h3 className="font-bold text-2xl mb-8 text-foreground">المهام الأخيرة</h3>
+        <div className="space-y-4">
           {props.tasks.slice(0, 5).map((task) => {
             const board = props.boards.find(b => b.id === task.boardId);
             return (
-              <div key={task.id} className="flex items-center gap-4 p-4 bg-gradient-to-r from-muted/20 to-muted/40 rounded-xl hover:bg-muted/60 transition-all duration-200">
+              <div key={task.id} className="flex items-center gap-5 p-5 bg-gradient-to-r from-muted/20 to-muted/40 rounded-xl hover:bg-muted/60 transition-all duration-200">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
