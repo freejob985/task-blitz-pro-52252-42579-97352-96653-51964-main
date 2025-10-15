@@ -52,17 +52,23 @@ export function QuickAddMode({
   ];
 
   useEffect(() => {
+    console.log('QuickAddMode useEffect called:', { isOpen, mainBoards, firstBoardId: mainBoards[0]?.id });
     if (isOpen) {
-      setTaskBoardId(mainBoards[0]?.id || '');
-      setSubBoardParentId(mainBoards[0]?.id || '');
+      const firstBoardId = mainBoards[0]?.id || '';
+      console.log('Setting taskBoardId to:', firstBoardId);
+      setTaskBoardId(firstBoardId);
+      setSubBoardParentId(firstBoardId);
     }
   }, [isOpen, mainBoards]);
 
   const handleAddTask = () => {
+    console.log('QuickAddMode handleAddTask called:', { taskTitle, taskBoardId, mainBoards });
     if (!taskTitle.trim()) {
+      console.log('Task title is empty');
       return;
     }
     if (!taskBoardId) {
+      console.log('No board selected');
       return;
     }
 
@@ -77,8 +83,14 @@ export function QuickAddMode({
       order: 0,
     };
 
-    onAddTask(newTask);
-    setRecentlyAdded(prev => [...prev, { type: 'مهمة', title: taskTitle, id: newTask.id }]);
+    console.log('Calling onAddTask with:', newTask);
+    try {
+      onAddTask(newTask);
+      setRecentlyAdded(prev => [...prev, { type: 'مهمة', title: taskTitle, id: newTask.id }]);
+      console.log('Task added successfully');
+    } catch (error) {
+      console.error('Error adding task:', error);
+    }
     
     // إعادة تعيين النموذج
     setTaskTitle('');
@@ -111,7 +123,11 @@ export function QuickAddMode({
   };
 
   const handleAddBoard = () => {
-    if (!boardTitle.trim()) return;
+    console.log('QuickAddMode handleAddBoard called:', { boardTitle, boardDescription, boardColor });
+    if (!boardTitle.trim()) {
+      console.log('Board title is empty');
+      return;
+    }
 
     const newBoard: Board = {
       id: `board-${Date.now()}`,
@@ -122,8 +138,14 @@ export function QuickAddMode({
       color: boardColor,
     };
 
-    onAddBoard(newBoard);
-    setRecentlyAdded(prev => [...prev, { type: 'قسم', title: boardTitle, id: newBoard.id }]);
+    console.log('Calling onAddBoard with:', newBoard);
+    try {
+      onAddBoard(newBoard);
+      setRecentlyAdded(prev => [...prev, { type: 'قسم', title: boardTitle, id: newBoard.id }]);
+      console.log('Board added successfully');
+    } catch (error) {
+      console.error('Error adding board:', error);
+    }
     
     // إعادة تعيين النموذج
     setBoardTitle('');
@@ -156,10 +178,20 @@ export function QuickAddMode({
   };
 
   const handleAddSubBoard = () => {
-    if (!subBoardTitle.trim() || !subBoardParentId) return;
+    console.log('QuickAddMode handleAddSubBoard called:', { subBoardTitle, subBoardParentId });
+    if (!subBoardTitle.trim() || !subBoardParentId) {
+      console.log('SubBoard title or parent ID is empty');
+      return;
+    }
 
-    onAddSubBoard(subBoardParentId, subBoardTitle.trim());
-    setRecentlyAdded(prev => [...prev, { type: 'قسم فرعي', title: subBoardTitle, id: `sub-${Date.now()}` }]);
+    console.log('Calling onAddSubBoard with:', { parentId: subBoardParentId, title: subBoardTitle.trim() });
+    try {
+      onAddSubBoard(subBoardParentId, subBoardTitle.trim());
+      setRecentlyAdded(prev => [...prev, { type: 'قسم فرعي', title: subBoardTitle, id: `sub-${Date.now()}` }]);
+      console.log('SubBoard added successfully');
+    } catch (error) {
+      console.error('Error adding subBoard:', error);
+    }
     
     // إعادة تعيين النموذج
     setSubBoardTitle('');
@@ -292,17 +324,18 @@ export function QuickAddMode({
               </Button>
             </div>
 
-            {/* تبديل وضع الإضافة المتعددة */}
-            <div className="flex items-center justify-center mb-6">
+            {/* زر الإضافة المتعددة السريع */}
+            <div className="flex justify-center mb-4">
               <Button
-                variant={multipleMode ? 'default' : 'outline'}
+                variant="secondary"
                 onClick={() => setMultipleMode(!multipleMode)}
-                className="gap-2"
+                className="gap-2 px-6 py-2"
               >
                 <Layers className="h-4 w-4" />
-                {multipleMode ? 'وضع الإضافة المتعددة' : 'وضع الإضافة المفردة'}
+                {multipleMode ? 'إضافة متعددة' : 'إضافة مفردة'}
               </Button>
             </div>
+
 
             <div className="flex-1 overflow-y-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

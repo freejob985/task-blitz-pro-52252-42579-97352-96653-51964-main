@@ -1075,6 +1075,9 @@ export default function Index() {
                 onToggleBoardCollapse={handleToggleBoardCollapse}
                 onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
                 onFocusOnBoard={handleFocusOnBoard}
+                onDuplicateBoard={handleDuplicateBoard}
+                onToggleFavorite={handleToggleFavorite}
+                onArchiveBoard={handleArchiveBoard}
                 hiddenSubBoards={hiddenSubBoards}
                 focusedBoardId={focusedBoardId}
                 showCompletedTasks={showCompletedTasks}
@@ -1117,6 +1120,9 @@ export default function Index() {
                 onToggleBoardCollapse={handleToggleBoardCollapse}
                 onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
                 onFocusOnBoard={handleFocusOnBoard}
+                onDuplicateBoard={handleDuplicateBoard}
+                onToggleFavorite={handleToggleFavorite}
+                onArchiveBoard={handleArchiveBoard}
                 hiddenSubBoards={hiddenSubBoards}
                 focusedBoardId={focusedBoardId}
                 showCompletedTasks={showCompletedTasks}
@@ -1159,6 +1165,9 @@ export default function Index() {
                 onToggleBoardCollapse={handleToggleBoardCollapse}
                 onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
                 onFocusOnBoard={handleFocusOnBoard}
+                onDuplicateBoard={handleDuplicateBoard}
+                onToggleFavorite={handleToggleFavorite}
+                onArchiveBoard={handleArchiveBoard}
                 hiddenSubBoards={hiddenSubBoards}
                 focusedBoardId={focusedBoardId}
                 showCompletedTasks={showCompletedTasks}
@@ -1201,6 +1210,9 @@ export default function Index() {
                 onToggleBoardCollapse={handleToggleBoardCollapse}
                 onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
                 onFocusOnBoard={handleFocusOnBoard}
+                onDuplicateBoard={handleDuplicateBoard}
+                onToggleFavorite={handleToggleFavorite}
+                onArchiveBoard={handleArchiveBoard}
                 hiddenSubBoards={hiddenSubBoards}
                 focusedBoardId={focusedBoardId}
                 showCompletedTasks={showCompletedTasks}
@@ -1243,6 +1255,9 @@ export default function Index() {
                 onToggleBoardCollapse={handleToggleBoardCollapse}
                 onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
                 onFocusOnBoard={handleFocusOnBoard}
+                onDuplicateBoard={handleDuplicateBoard}
+                onToggleFavorite={handleToggleFavorite}
+                onArchiveBoard={handleArchiveBoard}
                 hiddenSubBoards={hiddenSubBoards}
                 focusedBoardId={focusedBoardId}
                 showCompletedTasks={showCompletedTasks}
@@ -1285,6 +1300,9 @@ export default function Index() {
                 onToggleBoardCollapse={handleToggleBoardCollapse}
                 onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
                 onFocusOnBoard={handleFocusOnBoard}
+                onDuplicateBoard={handleDuplicateBoard}
+                onToggleFavorite={handleToggleFavorite}
+                onArchiveBoard={handleArchiveBoard}
                 hiddenSubBoards={hiddenSubBoards}
                 focusedBoardId={focusedBoardId}
                 showCompletedTasks={showCompletedTasks}

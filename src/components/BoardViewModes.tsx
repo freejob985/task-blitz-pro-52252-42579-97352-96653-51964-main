@@ -5,6 +5,8 @@ import { Grid, List, Calendar, Kanban, LayoutGrid, Table2, BarChart3, PieChart, 
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn, getDueDateInfo } from '@/lib/utils';
+import { TaskContextMenu } from './TaskContextMenu';
+import { BoardContextMenu } from './BoardContextMenu';
 import type { Board, Task } from '@/types';
 
 export type ViewMode = 'default' | 'grid' | 'list' | 'calendar' | 'kanban' | 'table' | 'chart';
@@ -71,6 +73,9 @@ interface DefaultViewProps {
   onToggleBoardCollapse: (boardId: string) => void;
   onToggleSubBoardVisibility: (boardId: string) => void;
   onFocusOnBoard: (boardId: string) => void;
+  onDuplicateBoard: (board: Board) => void;
+  onToggleFavorite: (boardId: string) => void;
+  onArchiveBoard: (boardId: string) => void;
   hiddenSubBoards: Set<string>;
   focusedBoardId?: string | null;
   showCompletedTasks?: boolean;
@@ -122,10 +127,28 @@ export function GridView(props: DefaultViewProps) {
           const progress = boardTasks.length > 0 ? (completedCount / boardTasks.length) * 100 : 0;
 
           return (
-            <div
+            <BoardContextMenu
               key={board.id}
-              className="bg-gradient-to-br from-card to-card/80 rounded-2xl p-8 border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] mb-6"
+              board={board}
+              taskCount={boardTasks.length}
+              onEdit={props.onEditBoard}
+              onDelete={props.onDeleteBoard}
+              onDuplicate={props.onDuplicateBoard}
+              onToggleFocus={props.onFocusOnBoard}
+              onToggleCollapse={props.onToggleBoardCollapse}
+              onToggleVisibility={props.onToggleSubBoardVisibility}
+              onAddTask={props.onAddTask}
+              onBulkAdd={props.onBulkAdd}
+              onAddSubBoard={props.onAddSubBoard}
+              onToggleFavorite={props.onToggleFavorite}
+              onArchive={props.onArchiveBoard}
+              onCopyTasks={async (boardId) => {
+                const tasks = props.tasks.filter(t => t.boardId === boardId);
+                // Implementation for copying tasks
+                console.log('Copying tasks:', tasks);
+              }}
             >
+              <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl p-8 border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] mb-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                   {board.color && (
@@ -160,15 +183,25 @@ export function GridView(props: DefaultViewProps) {
                     {filteredTasks.map((task, index) => (
                       <Draggable key={task.id} draggableId={task.id} index={index}>
                         {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className={`flex items-center gap-4 p-4 bg-gradient-to-r from-muted/30 to-muted/50 rounded-xl text-sm hover:bg-muted/70 cursor-pointer transition-all duration-200 ${
-                              snapshot.isDragging ? 'rotate-1 scale-105 shadow-lg' : 'hover:shadow-md'
-                            }`}
-                            onClick={() => props.onEditTask(task)}
+                          <TaskContextMenu
+                            task={task}
+                            boards={props.boards}
+                            onEdit={props.onEditTask}
+                            onDelete={props.onDeleteTask}
+                            onDuplicate={props.onDuplicateTask}
+                            onStatusChange={props.onTaskStatusChange}
+                            onArchive={props.onArchiveTask}
+                            onMoveToBoard={props.onMoveToBoard}
                           >
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={`flex items-center gap-4 p-4 bg-gradient-to-r from-muted/30 to-muted/50 rounded-xl text-sm hover:bg-muted/70 cursor-pointer transition-all duration-200 ${
+                                snapshot.isDragging ? 'rotate-1 scale-105 shadow-lg' : 'hover:shadow-md'
+                              }`}
+                              onClick={() => props.onEditTask(task)}
+                            >
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -206,7 +239,8 @@ export function GridView(props: DefaultViewProps) {
                         {task.priority === 'high' ? 'عالي' : task.priority === 'medium' ? 'متوسط' : 'منخفض'}
                       </Badge>
                     )}
-                          </div>
+                            </div>
+                          </TaskContextMenu>
                         )}
                       </Draggable>
                     ))}
@@ -246,7 +280,8 @@ export function GridView(props: DefaultViewProps) {
                   تعديل
                 </Button>
               </div>
-            </div>
+              </div>
+            </BoardContextMenu>
           );
         })}
     </div>
@@ -268,7 +303,27 @@ export function ListView(props: DefaultViewProps) {
           const progress = boardTasks.length > 0 ? (completedCount / boardTasks.length) * 100 : 0;
 
           return (
-            <div key={board.id} className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 mb-8">
+            <BoardContextMenu
+              key={board.id}
+              board={board}
+              taskCount={boardTasks.length}
+              onEdit={props.onEditBoard}
+              onDelete={props.onDeleteBoard}
+              onDuplicate={props.onDuplicateBoard}
+              onToggleFocus={props.onFocusOnBoard}
+              onToggleCollapse={props.onToggleBoardCollapse}
+              onToggleVisibility={props.onToggleSubBoardVisibility}
+              onAddTask={props.onAddTask}
+              onBulkAdd={props.onBulkAdd}
+              onAddSubBoard={props.onAddSubBoard}
+              onToggleFavorite={props.onToggleFavorite}
+              onArchive={props.onArchiveBoard}
+              onCopyTasks={async (boardId) => {
+                const tasks = props.tasks.filter(t => t.boardId === boardId);
+                console.log('Copying tasks:', tasks);
+              }}
+            >
+              <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 mb-8">
               {/* رأس القسم */}
               <div className="relative p-8 border-b border-border/50 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
                 {/* خلفية زخرفية */}
@@ -376,15 +431,25 @@ export function ListView(props: DefaultViewProps) {
                         {filteredTasks.map((task, index) => (
                           <Draggable key={task.id} draggableId={task.id} index={index}>
                             {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className={`flex items-center gap-5 p-5 bg-gradient-to-r from-muted/20 to-muted/40 rounded-xl hover:bg-muted/60 cursor-pointer transition-all duration-200 ${
-                                  snapshot.isDragging ? 'rotate-1 scale-105 shadow-lg' : 'hover:shadow-md'
-                                }`}
-                                onClick={() => props.onEditTask(task)}
+                              <TaskContextMenu
+                                task={task}
+                                boards={props.boards}
+                                onEdit={props.onEditTask}
+                                onDelete={props.onDeleteTask}
+                                onDuplicate={props.onDuplicateTask}
+                                onStatusChange={props.onTaskStatusChange}
+                                onArchive={props.onArchiveTask}
+                                onMoveToBoard={props.onMoveToBoard}
                               >
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={`flex items-center gap-5 p-5 bg-gradient-to-r from-muted/20 to-muted/40 rounded-xl hover:bg-muted/60 cursor-pointer transition-all duration-200 ${
+                                    snapshot.isDragging ? 'rotate-1 scale-105 shadow-lg' : 'hover:shadow-md'
+                                  }`}
+                                  onClick={() => props.onEditTask(task)}
+                                >
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -436,7 +501,8 @@ export function ListView(props: DefaultViewProps) {
                              task.status === 'working' ? 'قيد التنفيذ' : 'في الانتظار'}
                           </Badge>
                         </div>
-                              </div>
+                                </div>
+                              </TaskContextMenu>
                             )}
                           </Draggable>
                         ))}
@@ -451,7 +517,8 @@ export function ListView(props: DefaultViewProps) {
                   </div>
                 )}
               </div>
-            </div>
+              </div>
+            </BoardContextMenu>
           );
         })}
     </div>
@@ -607,20 +674,30 @@ export function CalendarView(props: DefaultViewProps) {
                     {dayTasks.slice(0, 2).map((task, taskIndex) => (
                       <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
                         {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className={cn(
-                              "text-xs p-1 rounded truncate cursor-pointer transition-all duration-200",
-                              task.status === 'completed' ? 'bg-green-100 text-green-800 line-through' : 
-                              task.status === 'working' ? 'bg-blue-100 text-blue-800' : 'bg-primary/10 text-primary',
-                              snapshot.isDragging && 'rotate-1 scale-105 shadow-lg'
-                            )}
-                            title={`${task.title} - ${task.status === 'completed' ? 'مكتملة' : 
-                                   task.status === 'working' ? 'قيد التنفيذ' : 'في الانتظار'}`}
-                            onClick={() => props.onEditTask(task)}
+                          <TaskContextMenu
+                            task={task}
+                            boards={props.boards}
+                            onEdit={props.onEditTask}
+                            onDelete={props.onDeleteTask}
+                            onDuplicate={props.onDuplicateTask}
+                            onStatusChange={props.onTaskStatusChange}
+                            onArchive={props.onArchiveTask}
+                            onMoveToBoard={props.onMoveToBoard}
                           >
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={cn(
+                                "text-xs p-1 rounded truncate cursor-pointer transition-all duration-200",
+                                task.status === 'completed' ? 'bg-green-100 text-green-800 line-through' : 
+                                task.status === 'working' ? 'bg-blue-100 text-blue-800' : 'bg-primary/10 text-primary',
+                                snapshot.isDragging && 'rotate-1 scale-105 shadow-lg'
+                              )}
+                              title={`${task.title} - ${task.status === 'completed' ? 'مكتملة' : 
+                                     task.status === 'working' ? 'قيد التنفيذ' : 'في الانتظار'}`}
+                              onClick={() => props.onEditTask(task)}
+                            >
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={(e) => {
@@ -638,7 +715,8 @@ export function CalendarView(props: DefaultViewProps) {
                               </button>
                               <span className="truncate">{task.title}</span>
                             </div>
-                          </div>
+                            </div>
+                          </TaskContextMenu>
                         )}
                       </Draggable>
                     ))}
@@ -700,9 +778,19 @@ export function KanbanView(props: DefaultViewProps) {
                       statusTasks.map((task, index) => (
                         <Draggable key={task.id} draggableId={task.id} index={index}>
                           {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
+                            <TaskContextMenu
+                              task={task}
+                              boards={props.boards}
+                              onEdit={props.onEditTask}
+                              onDelete={props.onDeleteTask}
+                              onDuplicate={props.onDuplicateTask}
+                              onStatusChange={props.onTaskStatusChange}
+                              onArchive={props.onArchiveTask}
+                              onMoveToBoard={props.onMoveToBoard}
+                            >
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
                               {...provided.dragHandleProps}
                               className={`bg-gradient-to-br from-card to-card/80 p-5 rounded-xl border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer ${
                                 snapshot.isDragging ? 'rotate-2 scale-105 shadow-2xl' : 'hover:scale-[1.02]'
@@ -765,7 +853,8 @@ export function KanbanView(props: DefaultViewProps) {
                           })()}
                         </div>
                       )}
-                            </div>
+                              </div>
+                            </TaskContextMenu>
                           )}
                         </Draggable>
                       ))
@@ -1103,7 +1192,18 @@ export function TableView(props: DefaultViewProps) {
               {filteredTasks.map((task) => {
                 const board = props.boards.find(b => b.id === task.boardId);
                 return (
-                  <tr key={task.id} className="border-t hover:bg-muted/50 transition-colors">
+                  <TaskContextMenu
+                    key={task.id}
+                    task={task}
+                    boards={props.boards}
+                    onEdit={props.onEditTask}
+                    onDelete={props.onDeleteTask}
+                    onDuplicate={props.onDuplicateTask}
+                    onStatusChange={props.onTaskStatusChange}
+                    onArchive={props.onArchiveTask}
+                    onMoveToBoard={props.onMoveToBoard}
+                  >
+                    <tr className="border-t hover:bg-muted/50 transition-colors">
                     <td className="p-4">
                       <div className="flex items-center gap-4">
                         <button
@@ -1207,7 +1307,8 @@ export function TableView(props: DefaultViewProps) {
                         </Button>
                       </div>
                     </td>
-                  </tr>
+                    </tr>
+                  </TaskContextMenu>
                 );
               })}
             </tbody>

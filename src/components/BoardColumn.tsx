@@ -50,6 +50,7 @@ interface BoardColumnProps {
   onFocusOnBoard: (boardId: string) => void;
   hiddenSubBoards: Set<string>;
   focusedBoardId?: string | null;
+  showCompletedTasks?: boolean;
 }
 
 export function BoardColumn({
@@ -75,6 +76,7 @@ export function BoardColumn({
   onFocusOnBoard,
   hiddenSubBoards,
   focusedBoardId,
+  showCompletedTasks = true,
 }: BoardColumnProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
