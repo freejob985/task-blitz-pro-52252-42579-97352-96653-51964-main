@@ -458,6 +458,8 @@ export function BoardColumn({
                                     }}
                                     onMoveToBoard={onMoveToBoard}
                                     onArchive={onArchiveTask}
+                                    boardTitle={subBoard.title}
+                                    boardColor={subBoard.color}
                                   />
                                 ) : (
                                   <div className="text-center py-8 text-muted-foreground bg-muted/10 rounded-lg border-2 border-dashed border-muted">
@@ -534,6 +536,8 @@ export function BoardColumn({
                       }}
                       onMoveToBoard={onMoveToBoard}
                       onArchive={onArchiveTask}
+                      boardTitle={board.title}
+                      boardColor={board.color}
                     />
                     {provided.placeholder}
                   </div>

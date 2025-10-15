@@ -29,6 +29,8 @@ interface TaskTableProps {
   onToggleComplete: (id: string) => void;
   onMoveToBoard: (taskId: string, boardId: string) => void;
   onArchive?: (taskId: string) => void;
+  boardTitle?: string;
+  boardColor?: string;
 }
 
 export function TaskTable({
@@ -41,6 +43,8 @@ export function TaskTable({
   onToggleComplete,
   onMoveToBoard,
   onArchive,
+  boardTitle,
+  boardColor,
 }: TaskTableProps) {
   // التحقق من الوضع الليلي
   const isDark = document.documentElement.classList.contains('dark');
@@ -72,7 +76,24 @@ export function TaskTable({
 
   if (tasks.length === 0) {
     return (
-      <div className="overflow-x-auto rounded-xl border-2 border-border/50 bg-card shadow-sm">
+      <div className="overflow-x-auto rounded-xl border-2 border-border/50 bg-card shadow-sm" style={{ marginTop: '5%' }}>
+        {/* عنوان الجدول */}
+        <div className="p-6 border-b border-border/30 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 dark:from-primary/20 dark:via-primary/10 dark:to-accent/20">
+          <div className="flex items-center justify-center gap-3">
+            {boardColor && (
+              <div 
+                className="w-4 h-4 rounded-full shadow-sm ring-2 ring-white/20 dark:ring-slate-700/50"
+                style={{ backgroundColor: boardColor }}
+              />
+            )}
+            <h3 className="font-bold text-xl text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              {boardTitle || 'مهام القسم'}
+            </h3>
+            <Badge variant="outline" className="text-sm px-3 py-1 border-primary/30 bg-primary/5 dark:bg-primary/10">
+              {tasks.length} مهمة
+            </Badge>
+          </div>
+        </div>
         <table className="task-table w-full">
           <tbody>
             <tr>
@@ -87,7 +108,24 @@ export function TaskTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border-2 border-border/50 bg-card shadow-sm">
+    <div className="overflow-x-auto rounded-xl border-2 border-border/50 bg-card shadow-sm" style={{ marginTop: '5%' }}>
+      {/* عنوان الجدول */}
+      <div className="p-6 border-b border-border/30 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 dark:from-primary/20 dark:via-primary/10 dark:to-accent/20">
+        <div className="flex items-center justify-center gap-3">
+          {boardColor && (
+            <div 
+              className="w-4 h-4 rounded-full shadow-sm ring-2 ring-white/20 dark:ring-slate-700/50"
+              style={{ backgroundColor: boardColor }}
+            />
+          )}
+          <h3 className="font-bold text-xl text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            {boardTitle || 'مهام القسم'}
+          </h3>
+          <Badge variant="outline" className="text-sm px-3 py-1 border-primary/30 bg-primary/5 dark:bg-primary/10">
+            {tasks.length} مهمة
+          </Badge>
+        </div>
+      </div>
       <table className="task-table w-full">
         <thead>
           <tr className="bg-gradient-to-l from-primary/5 to-accent/5">
