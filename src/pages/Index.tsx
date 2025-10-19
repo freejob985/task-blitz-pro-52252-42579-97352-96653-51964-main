@@ -307,6 +307,7 @@ export default function Index() {
       description: taskData.description,
       status: taskData.status || 'waiting',
       priority: taskData.priority || 'medium',
+      difficulty: taskData.difficulty || 'medium',
       tags: taskData.tags || [],
       dueDate: taskData.dueDate,
       boardId: taskData.boardId,
@@ -345,6 +346,7 @@ export default function Index() {
         description: taskData.description,
         status: taskData.status || 'waiting',
         priority: taskData.priority || 'medium',
+        difficulty: taskData.difficulty || 'medium',
         tags: taskData.tags || [],
         dueDate: taskData.dueDate,
         boardId: taskData.boardId || boards[0]?.id || '',
@@ -623,6 +625,13 @@ export default function Index() {
       const board = boards.find(b => b.id === boardId);
       showToast(`تم التركيز على "${board?.title}"`, 'success');
     }
+  };
+
+  const handleTaskDifficultyChange = async (id: string, difficulty: Task['difficulty']) => {
+    const updated = tasks.map(t => t.id === id ? { ...t, difficulty } : t);
+    setTasks(updated);
+    await saveTask(updated.find(t => t.id === id)!);
+    showToast(`تم تغيير درجة الصعوبة إلى ${difficulty === 'easy' ? 'سهل' : difficulty === 'medium' ? 'متوسط' : difficulty === 'hard' ? 'صعب' : 'خبير'}`, 'success');
   };
 
   const handleDeleteAllData = async () => {
@@ -968,8 +977,9 @@ export default function Index() {
                   {boards.filter(board => !board.parentId && !board.isArchived).map((board, index) => {
                     const isFocused = focusedBoardId === board.id;
                     const isHidden = focusedBoardId && focusedBoardId !== board.id;
+                    const isSubBoardsHidden = hiddenSubBoards.has(board.id);
                     
-                    if (isHidden) return null;
+                    if (isHidden || isSubBoardsHidden) return null;
                     
                     return (
                       <BoardColumn 
@@ -1019,6 +1029,7 @@ export default function Index() {
                             }, 1000); // تأخير قصير لإظهار الإشعار بعد تحديث المهمة
                           }
                         }}
+                        onTaskDifficultyChange={handleTaskDifficultyChange}
                         onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }} 
                         onMoveToBoard={handleMoveToBoard}
                         onArchiveTask={handleArchiveTask}
@@ -1068,6 +1079,7 @@ export default function Index() {
                   await saveTask(updated.find(t => t.id === id)!); 
                   if (status === 'completed') await playSound('complete');
                 }}
+                onTaskDifficultyChange={handleTaskDifficultyChange}
                 onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }}
                 onMoveToBoard={handleMoveToBoard}
                 onArchiveTask={handleArchiveTask}
@@ -1113,6 +1125,7 @@ export default function Index() {
                   await saveTask(updated.find(t => t.id === id)!); 
                   if (status === 'completed') await playSound('complete');
                 }}
+                onTaskDifficultyChange={handleTaskDifficultyChange}
                 onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }}
                 onMoveToBoard={handleMoveToBoard}
                 onArchiveTask={handleArchiveTask}
@@ -1158,6 +1171,7 @@ export default function Index() {
                   await saveTask(updated.find(t => t.id === id)!); 
                   if (status === 'completed') await playSound('complete');
                 }}
+                onTaskDifficultyChange={handleTaskDifficultyChange}
                 onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }}
                 onMoveToBoard={handleMoveToBoard}
                 onArchiveTask={handleArchiveTask}
@@ -1203,6 +1217,7 @@ export default function Index() {
                   await saveTask(updated.find(t => t.id === id)!); 
                   if (status === 'completed') await playSound('complete');
                 }}
+                onTaskDifficultyChange={handleTaskDifficultyChange}
                 onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }}
                 onMoveToBoard={handleMoveToBoard}
                 onArchiveTask={handleArchiveTask}
@@ -1248,6 +1263,7 @@ export default function Index() {
                   await saveTask(updated.find(t => t.id === id)!); 
                   if (status === 'completed') await playSound('complete');
                 }}
+                onTaskDifficultyChange={handleTaskDifficultyChange}
                 onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }}
                 onMoveToBoard={handleMoveToBoard}
                 onArchiveTask={handleArchiveTask}
@@ -1293,6 +1309,7 @@ export default function Index() {
                   await saveTask(updated.find(t => t.id === id)!); 
                   if (status === 'completed') await playSound('complete');
                 }}
+                onTaskDifficultyChange={handleTaskDifficultyChange}
                 onBulkAdd={(id) => { setDefaultBoardId(id); setBulkModalOpen(true); }}
                 onMoveToBoard={handleMoveToBoard}
                 onArchiveTask={handleArchiveTask}

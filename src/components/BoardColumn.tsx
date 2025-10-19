@@ -41,6 +41,7 @@ interface BoardColumnProps {
   onDeleteTask: (id: string) => void;
   onDuplicateTask: (task: Task) => void;
   onTaskStatusChange: (id: string, status: Task['status']) => void;
+  onTaskDifficultyChange?: (id: string, difficulty: Task['difficulty']) => void;
   onBulkAdd: (boardId: string) => void;
   onMoveToBoard: (taskId: string, boardId: string) => void;
   onArchiveTask: (taskId: string) => void;
@@ -67,6 +68,7 @@ export function BoardColumn({
   onDeleteTask,
   onDuplicateTask,
   onTaskStatusChange,
+  onTaskDifficultyChange,
   onBulkAdd,
   onMoveToBoard,
   onArchiveTask,
@@ -452,6 +454,7 @@ export function BoardColumn({
                                     onDelete={onDeleteTask}
                                     onDuplicate={onDuplicateTask}
                                     onStatusChange={onTaskStatusChange}
+                                    onTaskDifficultyChange={onTaskDifficultyChange}
                                     onToggleComplete={(id) => {
                                       const task = subBoardTasks.find(t => t.id === id);
                                       if (task) {
@@ -530,6 +533,7 @@ export function BoardColumn({
                       onDelete={onDeleteTask}
                       onDuplicate={onDuplicateTask}
                       onStatusChange={onTaskStatusChange}
+                      onTaskDifficultyChange={onTaskDifficultyChange}
                       onToggleComplete={(id) => {
                         const task = boardTasks.find(t => t.id === id);
                         if (task) {

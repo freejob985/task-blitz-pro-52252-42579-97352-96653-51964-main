@@ -2,6 +2,7 @@
 
 export type TaskStatus = 'working' | 'waiting' | 'frozen' | 'completed';
 export type TaskPriority = 'high' | 'medium' | 'low';
+export type TaskDifficulty = 'easy' | 'medium' | 'hard' | 'expert';
 
 export interface Task {
   id: string;
@@ -9,6 +10,7 @@ export interface Task {
   description?: string;
   status: TaskStatus;
   priority: TaskPriority;
+  difficulty: TaskDifficulty;
   tags: string[];
   dueDate?: string; // ISO string
   boardId: string;

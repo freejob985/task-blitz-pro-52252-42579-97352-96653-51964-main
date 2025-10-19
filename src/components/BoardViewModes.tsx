@@ -1,7 +1,7 @@
 // مكونات طرق العرض المختلفة للأقسام
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
-import { Grid, List, Calendar, Kanban, LayoutGrid, Table2, BarChart3, PieChart, Plus, FolderTree, Layers, CheckCircle } from 'lucide-react';
+import { Grid, List, Calendar, Kanban, LayoutGrid, Table2, BarChart3, PieChart, Plus, FolderTree, Layers, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn, getDueDateInfo } from '@/lib/utils';
@@ -66,6 +66,7 @@ interface DefaultViewProps {
   onDeleteTask: (id: string) => void;
   onDuplicateTask: (task: Task) => void;
   onTaskStatusChange: (id: string, status: Task['status']) => void;
+  onTaskDifficultyChange?: (id: string, difficulty: Task['difficulty']) => void;
   onBulkAdd: (boardId: string) => void;
   onMoveToBoard: (taskId: string, boardId: string) => void;
   onArchiveTask: (taskId: string) => void;
@@ -114,10 +115,64 @@ export function DefaultView(props: DefaultViewProps) {
 
 // مكون العرض الشبكي
 export function GridView(props: DefaultViewProps) {
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      const newPosition = scrollPosition - 320; // عرض عمود واحد تقريباً
+      scrollContainerRef.current.scrollTo({
+        left: Math.max(0, newPosition),
+        behavior: 'smooth'
+      });
+      setScrollPosition(Math.max(0, newPosition));
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      const newPosition = scrollPosition + 320; // عرض عمود واحد تقريباً
+      scrollContainerRef.current.scrollTo({
+        left: newPosition,
+        behavior: 'smooth'
+      });
+      setScrollPosition(newPosition);
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 p-4">
+    <div className="relative">
+      {/* أزرار التمرير */}
+      <div className="flex justify-between items-center mb-4 px-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={scrollLeft}
+          disabled={scrollPosition === 0}
+          className="flex items-center gap-2"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          السابق
+        </Button>
+        <h2 className="text-lg font-semibold">العرض الشبكي</h2>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={scrollRight}
+          className="flex items-center gap-2"
+        >
+          التالي
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* حاوية التمرير الأفقية */}
+      <div 
+        ref={scrollContainerRef}
+        className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide"
+      >
       {props.boards
-        .filter(board => !board.parentId)
+        .filter(board => !board.parentId && !props.hiddenSubBoards.has(board.id))
         .map((board) => {
           const boardTasks = props.tasks.filter(t => t.boardId === board.id);
           const filteredTasks = props.showCompletedTasks === false 
@@ -127,28 +182,28 @@ export function GridView(props: DefaultViewProps) {
           const progress = boardTasks.length > 0 ? (completedCount / boardTasks.length) * 100 : 0;
 
           return (
-            <BoardContextMenu
-              key={board.id}
-              board={board}
-              taskCount={boardTasks.length}
-              onEdit={props.onEditBoard}
-              onDelete={props.onDeleteBoard}
-              onDuplicate={props.onDuplicateBoard}
-              onToggleFocus={props.onFocusOnBoard}
-              onToggleCollapse={props.onToggleBoardCollapse}
-              onToggleVisibility={props.onToggleSubBoardVisibility}
-              onAddTask={props.onAddTask}
-              onBulkAdd={props.onBulkAdd}
-              onAddSubBoard={props.onAddSubBoard}
-              onToggleFavorite={props.onToggleFavorite}
-              onArchive={props.onArchiveBoard}
-              onCopyTasks={async (boardId) => {
-                const tasks = props.tasks.filter(t => t.boardId === boardId);
-                // Implementation for copying tasks
-                console.log('Copying tasks:', tasks);
-              }}
-            >
-              <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl p-8 border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] mb-6">
+            <div key={board.id} className="flex-shrink-0 w-80">
+              <BoardContextMenu
+                board={board}
+                taskCount={boardTasks.length}
+                onEdit={props.onEditBoard}
+                onDelete={props.onDeleteBoard}
+                onDuplicate={props.onDuplicateBoard}
+                onToggleFocus={props.onFocusOnBoard}
+                onToggleCollapse={props.onToggleBoardCollapse}
+                onToggleVisibility={props.onToggleSubBoardVisibility}
+                onAddTask={props.onAddTask}
+                onBulkAdd={props.onBulkAdd}
+                onAddSubBoard={props.onAddSubBoard}
+                onToggleFavorite={props.onToggleFavorite}
+                onArchive={props.onArchiveBoard}
+                onCopyTasks={async (boardId) => {
+                  const tasks = props.tasks.filter(t => t.boardId === boardId);
+                  // Implementation for copying tasks
+                  console.log('Copying tasks:', tasks);
+                }}
+              >
+                <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl p-6 border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] h-fit">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                   {board.color && (
@@ -281,9 +336,11 @@ export function GridView(props: DefaultViewProps) {
                 </Button>
               </div>
               </div>
-            </BoardContextMenu>
+              </BoardContextMenu>
+            </div>
           );
         })}
+      </div>
     </div>
   );
 }
@@ -293,7 +350,7 @@ export function ListView(props: DefaultViewProps) {
   return (
     <div className="space-y-8 p-4">
       {props.boards
-        .filter(board => !board.parentId)
+        .filter(board => !board.parentId && !props.hiddenSubBoards.has(board.id))
         .map((board) => {
           const boardTasks = props.tasks.filter(t => t.boardId === board.id);
           const filteredTasks = props.showCompletedTasks === false 
@@ -886,6 +943,17 @@ export function TableView(props: DefaultViewProps) {
     ? props.tasks.filter(t => t.status !== 'completed')
     : props.tasks;
 
+  // Filter out tasks from hidden sub-boards
+  const tasksWithHiddenFilter = filteredTasks.filter(task => {
+    const taskBoard = props.boards.find(board => board.id === task.boardId);
+    if (!taskBoard || !taskBoard.parentId) {
+      // Main board tasks are always shown
+      return true;
+    }
+    // Sub-board tasks are only shown if their parent is not hidden
+    return !props.hiddenSubBoards.has(taskBoard.parentId);
+  });
+
   return (
     <div className="space-y-16 p-4">
       {/* أزرار التحكم في العرض */}
@@ -1172,7 +1240,7 @@ export function TableView(props: DefaultViewProps) {
             </div>
             <h3 className="font-bold text-2xl text-foreground">جميع المهام</h3>
             <Badge variant="outline" className="text-sm">
-              {filteredTasks.length} مهمة
+              {tasksWithHiddenFilter.length} مهمة
             </Badge>
           </div>
         </div>
@@ -1184,12 +1252,13 @@ export function TableView(props: DefaultViewProps) {
                 <th className="text-right p-3 text-sm font-medium">القسم</th>
                 <th className="text-right p-3 text-sm font-medium">الحالة</th>
                 <th className="text-right p-3 text-sm font-medium">الأولوية</th>
+                <th className="text-right p-3 text-sm font-medium">درجة الصعوبة</th>
                 <th className="text-right p-3 text-sm font-medium">تاريخ الاستحقاق</th>
                 <th className="text-right p-3 text-sm font-medium">الإجراءات</th>
               </tr>
             </thead>
             <tbody>
-              {filteredTasks.map((task) => {
+              {tasksWithHiddenFilter.map((task) => {
                 const board = props.boards.find(b => b.id === task.boardId);
                 return (
                   <TaskContextMenu
@@ -1264,6 +1333,46 @@ export function TableView(props: DefaultViewProps) {
                       ) : (
                         <span className="text-xs text-muted-foreground">-</span>
                       )}
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center justify-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const difficulties: Task['difficulty'][] = ['easy', 'medium', 'hard', 'expert'];
+                            const currentIndex = difficulties.indexOf(task.difficulty || 'medium');
+                            const nextIndex = (currentIndex + 1) % difficulties.length;
+                            props.onTaskDifficultyChange?.(task.id, difficulties[nextIndex]);
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-muted/50 transition-colors"
+                          title="انقر لتغيير درجة الصعوبة"
+                        >
+                          {(task.difficulty || 'medium') === 'easy' && (
+                            <>
+                              <span className="text-green-500">🟢</span>
+                              <span className="text-xs text-green-600 font-medium">سهل</span>
+                            </>
+                          )}
+                          {(task.difficulty || 'medium') === 'medium' && (
+                            <>
+                              <span className="text-yellow-500">🟡</span>
+                              <span className="text-xs text-yellow-600 font-medium">متوسط</span>
+                            </>
+                          )}
+                          {(task.difficulty || 'medium') === 'hard' && (
+                            <>
+                              <span className="text-orange-500">🟠</span>
+                              <span className="text-xs text-orange-600 font-medium">صعب</span>
+                            </>
+                          )}
+                          {(task.difficulty || 'medium') === 'expert' && (
+                            <>
+                              <span className="text-red-500">🔴</span>
+                              <span className="text-xs text-red-600 font-medium">خبير</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </td>
                     <td className="p-3">
                       {task.dueDate ? (

@@ -26,6 +26,7 @@ interface TaskTableProps {
   onDelete: (id: string) => void;
   onDuplicate: (task: Task) => void;
   onStatusChange: (id: string, status: Task['status']) => void;
+  onTaskDifficultyChange?: (id: string, difficulty: Task['difficulty']) => void;
   onToggleComplete: (id: string) => void;
   onMoveToBoard: (taskId: string, boardId: string) => void;
   onArchive?: (taskId: string) => void;
@@ -40,6 +41,7 @@ export function TaskTable({
   onDelete,
   onDuplicate,
   onStatusChange,
+  onTaskDifficultyChange,
   onToggleComplete,
   onMoveToBoard,
   onArchive,
@@ -137,6 +139,7 @@ export function TaskTable({
             <th className="min-w-[200px]">العنوان</th>
             <th className="w-32">الحالة</th>
             <th className="w-32">الأولوية</th>
+            <th className="w-32">درجة الصعوبة</th>
             <th className="w-40">الاستحقاق</th>
             <th className="w-48">الوسوم</th>
             <th className="w-16 text-center">إجراءات</th>
@@ -193,6 +196,48 @@ export function TaskTable({
                     <Badge className={cn('text-xs', priorityColors[task.priority])}>
                       {priorityLabels[task.priority]}
                     </Badge>
+                  </td>
+                  <td>
+                    <div className="flex items-center justify-center">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onTaskDifficultyChange) {
+                            const difficulties: Task['difficulty'][] = ['easy', 'medium', 'hard', 'expert'];
+                            const currentIndex = difficulties.indexOf(task.difficulty || 'medium');
+                            const nextIndex = (currentIndex + 1) % difficulties.length;
+                            onTaskDifficultyChange(task.id, difficulties[nextIndex]);
+                          }
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-muted/50 transition-colors"
+                        title="انقر لتغيير درجة الصعوبة"
+                      >
+                        {(task.difficulty || 'medium') === 'easy' && (
+                          <>
+                            <span className="text-green-500">🟢</span>
+                            <span className="text-xs text-green-600 font-medium">سهل</span>
+                          </>
+                        )}
+                        {(task.difficulty || 'medium') === 'medium' && (
+                          <>
+                            <span className="text-yellow-500">🟡</span>
+                            <span className="text-xs text-yellow-600 font-medium">متوسط</span>
+                          </>
+                        )}
+                        {(task.difficulty || 'medium') === 'hard' && (
+                          <>
+                            <span className="text-orange-500">🟠</span>
+                            <span className="text-xs text-orange-600 font-medium">صعب</span>
+                          </>
+                        )}
+                        {(task.difficulty || 'medium') === 'expert' && (
+                          <>
+                            <span className="text-red-500">🔴</span>
+                            <span className="text-xs text-red-600 font-medium">خبير</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </td>
                   <td>
                     {task.dueDate ? (

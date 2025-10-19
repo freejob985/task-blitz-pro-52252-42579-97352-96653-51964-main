@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* إخفاء شريط التمرير للعرض الشبكي */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Splash Screen Animations */
 @keyframes float {
   0%, 100% {
