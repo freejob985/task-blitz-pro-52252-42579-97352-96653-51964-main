@@ -645,7 +645,7 @@ export function MobileTaskManager({
                           <Checkbox
                             checked={task.status === 'completed'}
                             onCheckedChange={() => handleToggleCompletion(task.id, task.status)}
-                            className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                            className="h-3 w-3 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
                           />
                           <div className="flex items-center gap-1">
                             <GripVertical className="h-3 w-3 text-muted-foreground" />
