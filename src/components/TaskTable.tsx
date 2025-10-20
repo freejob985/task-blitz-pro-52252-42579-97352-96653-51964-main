@@ -174,7 +174,7 @@ export function TaskTable({
                       <button
                         onClick={() => onToggleComplete(task.id)}
                         className={cn(
-                          'font-medium text-left cursor-pointer hover:text-primary transition-colors duration-200 select-text text-base',
+                          'font-medium text-right cursor-pointer hover:text-primary transition-colors duration-200 select-text text-base',
                           task.status === 'completed' && 'line-through text-muted-foreground'
                         )}
                       >
@@ -209,30 +209,30 @@ export function TaskTable({
                             onTaskDifficultyChange(task.id, difficulties[nextIndex]);
                           }
                         }}
-                        className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-muted/50 transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-muted/50 transition-colors cursor-pointer border border-muted/20 hover:border-primary/30"
                         title="انقر لتغيير درجة الصعوبة"
                       >
                         {(task.difficulty || 'medium') === 'easy' && (
                           <>
-                            <span className="text-green-500">🟢</span>
+                            <span className="text-green-500 text-lg">🌱</span>
                             <span className="text-xs text-green-600 font-medium">سهل</span>
                           </>
                         )}
                         {(task.difficulty || 'medium') === 'medium' && (
                           <>
-                            <span className="text-yellow-500">🟡</span>
+                            <span className="text-yellow-500 text-lg">⚡</span>
                             <span className="text-xs text-yellow-600 font-medium">متوسط</span>
                           </>
                         )}
                         {(task.difficulty || 'medium') === 'hard' && (
                           <>
-                            <span className="text-orange-500">🟠</span>
+                            <span className="text-orange-500 text-lg">🔥</span>
                             <span className="text-xs text-orange-600 font-medium">صعب</span>
                           </>
                         )}
                         {(task.difficulty || 'medium') === 'expert' && (
                           <>
-                            <span className="text-red-500">🔴</span>
+                            <span className="text-red-500 text-lg">💀</span>
                             <span className="text-xs text-red-600 font-medium">خبير</span>
                           </>
                         )}

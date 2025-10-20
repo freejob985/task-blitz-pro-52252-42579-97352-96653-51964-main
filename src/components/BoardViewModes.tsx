@@ -1,6 +1,6 @@
 // مكونات طرق العرض المختلفة للأقسام
 import { useState, useRef } from 'react';
-import { Draggable, Droppable } from '@hello-pangea/dnd';
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { Grid, List, Calendar, Kanban, LayoutGrid, Table2, BarChart3, PieChart, Plus, FolderTree, Layers, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -120,23 +120,36 @@ export function GridView(props: DefaultViewProps) {
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
-      const newPosition = scrollPosition - 320; // عرض عمود واحد تقريباً
-      scrollContainerRef.current.scrollTo({
-        left: Math.max(0, newPosition),
-        behavior: 'smooth'
-      });
-      setScrollPosition(Math.max(0, newPosition));
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      const newPosition = scrollPosition + 320; // عرض عمود واحد تقريباً
+      const containerWidth = scrollContainerRef.current.clientWidth;
+      const scrollAmount = Math.min(containerWidth * 0.8, 400);
+      const newPosition = Math.max(0, scrollPosition - scrollAmount);
+      
       scrollContainerRef.current.scrollTo({
         left: newPosition,
         behavior: 'smooth'
       });
       setScrollPosition(newPosition);
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      const containerWidth = scrollContainerRef.current.clientWidth;
+      const scrollAmount = Math.min(containerWidth * 0.8, 400);
+      const maxScroll = scrollContainerRef.current.scrollWidth - containerWidth;
+      const newPosition = Math.min(maxScroll, scrollPosition + scrollAmount);
+      
+      scrollContainerRef.current.scrollTo({
+        left: newPosition,
+        behavior: 'smooth'
+      });
+      setScrollPosition(newPosition);
+    }
+  };
+
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      setScrollPosition(scrollContainerRef.current.scrollLeft);
     }
   };
 
@@ -149,28 +162,30 @@ export function GridView(props: DefaultViewProps) {
           size="sm"
           onClick={scrollLeft}
           disabled={scrollPosition === 0}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 hover:bg-primary/10 transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
           السابق
         </Button>
-        <h2 className="text-lg font-semibold">العرض الشبكي</h2>
+        <h2 className="text-lg font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">العرض الشبكي</h2>
         <Button
           variant="outline"
           size="sm"
           onClick={scrollRight}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 hover:bg-primary/10 transition-colors"
         >
           التالي
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* حاوية التمرير الأفقية */}
-      <div 
-        ref={scrollContainerRef}
-        className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide"
-      >
+      {/* حاوية التمرير الأفقية مع السحب والإفلات */}
+      <DragDropContext onDragEnd={() => {}}>
+        <div 
+          ref={scrollContainerRef}
+          className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide"
+          onScroll={handleScroll}
+        >
       {props.boards
         .filter(board => !board.parentId && !props.hiddenSubBoards.has(board.id))
         .map((board) => {
@@ -203,7 +218,7 @@ export function GridView(props: DefaultViewProps) {
                   console.log('Copying tasks:', tasks);
                 }}
               >
-                <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl p-6 border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] h-fit">
+                <div className="bg-gradient-to-br from-card to-card/80 rounded-2xl p-6 border-2 border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] h-fit min-h-[400px] flex flex-col">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                   {board.color && (
@@ -340,7 +355,8 @@ export function GridView(props: DefaultViewProps) {
             </div>
           );
         })}
-      </div>
+        </div>
+      </DragDropContext>
     </div>
   );
 }
@@ -1344,30 +1360,30 @@ export function TableView(props: DefaultViewProps) {
                             const nextIndex = (currentIndex + 1) % difficulties.length;
                             props.onTaskDifficultyChange?.(task.id, difficulties[nextIndex]);
                           }}
-                          className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-muted/50 transition-colors"
+                          className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-muted/50 transition-colors cursor-pointer border border-muted/20 hover:border-primary/30"
                           title="انقر لتغيير درجة الصعوبة"
                         >
                           {(task.difficulty || 'medium') === 'easy' && (
                             <>
-                              <span className="text-green-500">🟢</span>
+                              <span className="text-green-500 text-lg">🌱</span>
                               <span className="text-xs text-green-600 font-medium">سهل</span>
                             </>
                           )}
                           {(task.difficulty || 'medium') === 'medium' && (
                             <>
-                              <span className="text-yellow-500">🟡</span>
+                              <span className="text-yellow-500 text-lg">⚡</span>
                               <span className="text-xs text-yellow-600 font-medium">متوسط</span>
                             </>
                           )}
                           {(task.difficulty || 'medium') === 'hard' && (
                             <>
-                              <span className="text-orange-500">🟠</span>
+                              <span className="text-orange-500 text-lg">🔥</span>
                               <span className="text-xs text-orange-600 font-medium">صعب</span>
                             </>
                           )}
                           {(task.difficulty || 'medium') === 'expert' && (
                             <>
-                              <span className="text-red-500">🔴</span>
+                              <span className="text-red-500 text-lg">💀</span>
                               <span className="text-xs text-red-600 font-medium">خبير</span>
                             </>
                           )}

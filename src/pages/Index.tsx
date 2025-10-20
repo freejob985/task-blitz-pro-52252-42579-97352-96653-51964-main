@@ -590,12 +590,13 @@ export default function Index() {
   const handleToggleSubBoardVisibility = (boardId: string) => {
     setHiddenSubBoards(prev => {
       const newSet = new Set(prev);
+      const board = boards.find(b => b.id === boardId);
       if (newSet.has(boardId)) {
         newSet.delete(boardId);
-        showToast('تم إظهار الأقسام الفرعية', 'success');
+        showToast(`تم إظهار القسم "${board?.title}"`, 'success');
       } else {
         newSet.add(boardId);
-        showToast('تم إخفاء الأقسام الفرعية', 'info');
+        showToast(`تم إخفاء القسم "${board?.title}"`, 'info');
       }
       return newSet;
     });

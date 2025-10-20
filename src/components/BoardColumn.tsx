@@ -220,21 +220,19 @@ export function BoardColumn({
                   <Focus className={`h-5 w-5 ${focusedBoardId === board.id ? 'text-accent' : 'text-muted-foreground'}`} />
                 </Button>
 
-                {/* زر إخفاء/إظهار الأقسام الفرعية */}
-                {!board.parentId && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onToggleSubBoardVisibility(board.id)}
-                    className="h-9 w-9 hover:bg-accent/10"
-                    title={hiddenSubBoards.has(board.id) ? 'إظهار الأقسام الفرعية' : 'إخفاء الأقسام الفرعية'}
-                  >
-                    {hiddenSubBoards.has(board.id) ? 
-                      <EyeOff className="h-5 w-5 text-muted-foreground" /> : 
-                      <Eye className="h-5 w-5 text-accent" />
-                    }
-                  </Button>
-                )}
+                {/* زر إخفاء/إظهار القسم بالكامل */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onToggleSubBoardVisibility(board.id)}
+                  className="h-9 w-9 hover:bg-accent/10"
+                  title={hiddenSubBoards.has(board.id) ? 'إظهار القسم' : 'إخفاء القسم'}
+                >
+                  {hiddenSubBoards.has(board.id) ? 
+                    <EyeOff className="h-5 w-5 text-muted-foreground" /> : 
+                    <Eye className="h-5 w-5 text-accent" />
+                  }
+                </Button>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
