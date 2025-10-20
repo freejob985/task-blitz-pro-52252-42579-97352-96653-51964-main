@@ -1,6 +1,6 @@
 // مكون إدارة المهام للهواتف المحمولة
-import { useState, useCallback } from 'react';
-import { Plus, Layers, FolderPlus, Edit2, Trash2, CheckCircle, Clock, AlertCircle, XCircle, Star, Archive, Eye, EyeOff, MoreVertical, ArrowLeft, ArrowRight } from 'lucide-react';
+import { useState, useCallback, useRef } from 'react';
+import { Plus, Layers, FolderPlus, Edit2, Trash2, CheckCircle, Clock, AlertCircle, XCircle, Star, Archive, Eye, EyeOff, MoreVertical, ArrowLeft, ArrowRight, GripVertical } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -25,6 +25,7 @@ interface MobileTaskManagerProps {
   onToggleSubBoardVisibility: (boardId: string) => void;
   hiddenSubBoards: Set<string>;
   onBulkAdd: (boardId: string) => void;
+  onMoveTask: (taskId: string, boardId: string) => void;
 }
 
 export function MobileTaskManager({
@@ -38,6 +39,7 @@ export function MobileTaskManager({
   onToggleSubBoardVisibility,
   hiddenSubBoards,
   onBulkAdd,
+  onMoveTask,
 }: MobileTaskManagerProps) {
   const { isMobile, isTablet, isTouch } = useDeviceType();
   const [activeTab, setActiveTab] = useState('tasks');
@@ -55,6 +57,9 @@ export function MobileTaskManager({
   const [newSubBoardDescription, setNewSubBoardDescription] = useState('');
   const [parentBoardId, setParentBoardId] = useState<string>('');
   const [swipedTaskId, setSwipedTaskId] = useState<string | null>(null);
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOverBoardId, setDragOverBoardId] = useState<string | null>(null);
+  const dragRef = useRef<HTMLDivElement>(null);
 
   // الأقسام الرئيسية فقط
   const mainBoards = boards.filter(board => !board.parentId && !board.isArchived);
@@ -145,8 +150,8 @@ export function MobileTaskManager({
     }
   };
 
-  // Touch gesture handling
-  const handleTouchStart = useCallback((e: React.TouchEvent, taskId: string) => {
+  // Touch gesture handling for swipe
+  const handleSwipeStart = useCallback((e: React.TouchEvent, taskId: string) => {
     if (!isTouch) return;
     const touch = e.touches[0];
     const startX = touch.clientX;
@@ -194,6 +199,121 @@ export function MobileTaskManager({
     }
   };
 
+  // Drag and Drop handlers for mobile
+  const handleDragStart = useCallback((e: React.DragEvent, taskId: string) => {
+    setDraggedTaskId(taskId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', taskId);
+    
+    // Add visual feedback
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '0.5';
+    }
+  }, []);
+
+  const handleDragEnd = useCallback((e: React.DragEvent) => {
+    setDraggedTaskId(null);
+    setDragOverBoardId(null);
+    
+    // Remove visual feedback
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '1';
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, boardId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverBoardId(boardId);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    // Only clear if we're leaving the board area completely
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverBoardId(null);
+    }
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent, targetBoardId: string) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData('text/plain');
+    
+    if (!taskId || !draggedTaskId) return;
+    
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || task.boardId === targetBoardId) {
+      setDragOverBoardId(null);
+      return;
+    }
+    
+    // Move task to new board using the parent's move function
+    onMoveTask(taskId, targetBoardId);
+    
+    // Show success message
+    const targetBoard = boards.find(b => b.id === targetBoardId);
+    showToast(`تم نقل المهمة إلى ${targetBoard?.title || 'القسم الجديد'}`, 'success');
+    
+    setDragOverBoardId(null);
+  }, [draggedTaskId, tasks, boards, onMoveTask]);
+
+  // Touch drag handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent, taskId: string) => {
+    if (!isTouch) return;
+    setDraggedTaskId(taskId);
+    
+    const touch = e.touches[0];
+    const startX = touch.clientX;
+    const startY = touch.clientY;
+    
+    const handleTouchMove = (e: TouchEvent) => {
+      const currentTouch = e.touches[0];
+      const deltaX = currentTouch.clientX - startX;
+      const deltaY = currentTouch.clientY - startY;
+      
+      // Check if it's a drag gesture
+      if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+        // Add visual feedback for dragging
+        const element = e.target as HTMLElement;
+        if (element) {
+          element.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+          element.style.opacity = '0.7';
+        }
+      }
+    };
+    
+    const handleTouchEnd = (e: TouchEvent) => {
+      const touch = e.changedTouches[0];
+      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+      
+      // Check if dropped on a board
+      const boardElement = element?.closest('[data-board-id]');
+      if (boardElement) {
+        const boardId = boardElement.getAttribute('data-board-id');
+        if (boardId && boardId !== tasks.find(t => t.id === taskId)?.boardId) {
+          onMoveTask(taskId, boardId);
+          const targetBoard = boards.find(b => b.id === boardId);
+          showToast(`تم نقل المهمة إلى ${targetBoard?.title || 'القسم الجديد'}`, 'success');
+        }
+      }
+      
+      // Reset visual feedback
+      const draggedElement = document.querySelector(`[data-task-id="${taskId}"]`);
+      if (draggedElement) {
+        (draggedElement as HTMLElement).style.transform = '';
+        (draggedElement as HTMLElement).style.opacity = '1';
+      }
+      
+      setDraggedTaskId(null);
+      setDragOverBoardId(null);
+      
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+    
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+  }, [isTouch, tasks, boards, onMoveTask]);
+
   return (
     <div className={`${isMobile ? 'p-3' : 'p-4'} space-y-4 bg-gradient-to-br from-background to-muted/20 min-h-screen`}>
       {/* العنوان الرئيسي */}
@@ -208,8 +328,9 @@ export function MobileTaskManager({
 
       {/* التبويبات */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="tasks">المهام</TabsTrigger>
+          <TabsTrigger value="all-tasks">جميع المهام</TabsTrigger>
           <TabsTrigger value="boards">الأقسام</TabsTrigger>
           <TabsTrigger value="add">إضافة</TabsTrigger>
         </TabsList>
@@ -315,7 +436,7 @@ export function MobileTaskManager({
                         className={`relative flex items-center gap-2 p-3 bg-muted/30 rounded-lg border transition-all duration-200 ${
                           swipedTaskId === task.id ? 'bg-primary/10 border-primary/30' : 'hover:bg-muted/50'
                         } ${isTouch ? 'cursor-pointer' : ''}`}
-                        onTouchStart={(e) => handleTouchStart(e, task.id)}
+                        onTouchStart={(e) => handleSwipeStart(e, task.id)}
                         onClick={() => isTouch && handleQuickStatusChange(task.id, task.status)}
                       >
                         <div className="flex-shrink-0">
@@ -373,6 +494,137 @@ export function MobileTaskManager({
               </Card>
             );
           })}
+        </TabsContent>
+
+        {/* تبويب جميع المهام */}
+        <TabsContent value="all-tasks" className="space-y-4">
+          {/* Drop zones for boards */}
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {mainBoards.map(board => (
+              <div
+                key={`drop-${board.id}`}
+                data-board-id={board.id}
+                className={`p-3 rounded-lg border-2 border-dashed text-center transition-colors ${
+                  dragOverBoardId === board.id 
+                    ? 'border-primary bg-primary/10' 
+                    : 'border-muted-foreground/30'
+                }`}
+                onDragOver={(e) => handleDragOver(e, board.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, board.id)}
+              >
+                <div className="text-xs text-muted-foreground">
+                  {board.title}
+                </div>
+                <div className="text-xs text-muted-foreground/60 mt-1">
+                  اسحب المهام هنا
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-3">
+            {tasks.length === 0 ? (
+              <Card className="text-center py-8">
+                <CardContent>
+                  <div className="text-muted-foreground">
+                    <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">لا توجد مهام</p>
+                    <p className="text-sm">ابدأ بإضافة مهمة جديدة</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              tasks.map(task => {
+                const board = boards.find(b => b.id === task.boardId);
+                return (
+                  <Card 
+                    key={task.id} 
+                    data-task-id={task.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, task.id)}
+                    onDragEnd={handleDragEnd}
+                    onTouchStart={(e) => handleTouchStart(e, task.id)}
+                    className={`border-2 border-primary/20 transition-all duration-200 ${
+                      draggedTaskId === task.id ? 'opacity-50 scale-95' : ''
+                    } ${isTouch ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2 flex-1">
+                          <div className="flex items-center gap-1">
+                            <GripVertical className="h-3 w-3 text-muted-foreground" />
+                            {getStatusIcon(task.status)}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-medium text-sm leading-tight">{task.title}</h3>
+                            {task.description && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {task.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onEditTask(task)}>
+                              <Edit2 className="h-4 w-4 ml-2" />
+                              تعديل
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => onDeleteTask(task.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 ml-2" />
+                              حذف
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex gap-2">
+                          <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
+                            {task.priority === 'high' ? 'عالي' : task.priority === 'medium' ? 'متوسط' : 'منخفض'}
+                          </Badge>
+                          <Badge className={`text-xs ${getDifficultyColor(task.difficulty)}`}>
+                            {task.difficulty === 'easy' ? 'سهل' : task.difficulty === 'medium' ? 'متوسط' : task.difficulty === 'hard' ? 'صعب' : 'خبير'}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {board?.title || 'قسم غير محدد'}
+                        </div>
+                      </div>
+                      
+                      <div className="mt-3 flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs"
+                          onClick={() => handleQuickStatusChange(task.id, task.status)}
+                        >
+                          تغيير الحالة
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs"
+                          onClick={() => onEditTask(task)}
+                        >
+                          تعديل
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </div>
         </TabsContent>
 
         {/* تبويب الأقسام */}
@@ -646,20 +898,27 @@ export function MobileTaskManager({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Button 
-                  className="w-full" 
-                  variant="outline"
-                  onClick={() => {
-                    if (mainBoards.length > 0) {
-                      onBulkAdd(mainBoards[0].id);
-                    } else {
-                      showToast('لا توجد أقسام متاحة', 'error');
-                    }
-                  }}
-                >
-                  <Layers className="h-4 w-4 ml-2" />
-                  إضافة مهام متعددة
-                </Button>
+                <div className="space-y-2">
+                  <Button 
+                    className="w-full" 
+                    variant="outline"
+                    onClick={() => {
+                      if (mainBoards.length > 0) {
+                        onBulkAdd(mainBoards[0].id);
+                      } else {
+                        showToast('لا توجد أقسام متاحة', 'error');
+                      }
+                    }}
+                  >
+                    <Layers className="h-4 w-4 ml-2" />
+                    إضافة مهام متعددة
+                  </Button>
+                  {mainBoards.length > 1 && (
+                    <div className="text-xs text-muted-foreground text-center">
+                      سيتم إضافة المهام إلى القسم الأول
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>

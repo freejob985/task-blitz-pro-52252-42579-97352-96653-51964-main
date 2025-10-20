@@ -967,6 +967,12 @@ export default function Index() {
               <SearchBar searchQuery={searchQuery} onSearchChange={setSearchQuery} filters={filters} onFiltersChange={setFilters} boards={boards} allTags={allTags} />
             </div>
             <div className={`flex gap-2 ${isMobile ? 'w-full' : ''}`}>
+              {isMobile && (
+                <Button onClick={() => setBulkModalOpen(true)} variant="secondary" size="sm" className="flex-1">
+                  <Layers className="h-4 w-4 ml-2" />
+                  مهام متعددة
+                </Button>
+              )}
               {!isMobile && (
                 <>
                   <Button onClick={() => setBulkModalOpen(true)} variant="secondary">
@@ -1051,6 +1057,7 @@ export default function Index() {
             setDefaultBoardId(boardId);
             setBulkModalOpen(true);
           }}
+          onMoveTask={handleMoveToBoard}
         />
       ) : (
         <main className={`container mx-auto ${isMobile ? 'px-3 py-4' : isTablet ? 'px-4 py-5' : 'px-4 py-6'}`}>
