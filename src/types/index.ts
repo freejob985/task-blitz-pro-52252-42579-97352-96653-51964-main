@@ -36,6 +36,7 @@ export interface Board {
   category?: string;
   template?: string;
   isSubBoard?: boolean; // للدلالة على أن هذا قسم فرعي
+  subBoardsHidden?: boolean; // لحفظ حالة إخفاء الأقسام الفرعية
 }
 
 export interface FocusSession {

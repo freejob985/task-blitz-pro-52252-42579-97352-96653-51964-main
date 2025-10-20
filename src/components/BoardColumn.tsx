@@ -220,19 +220,21 @@ export function BoardColumn({
                   <Focus className={`h-5 w-5 ${focusedBoardId === board.id ? 'text-accent' : 'text-muted-foreground'}`} />
                 </Button>
 
-                {/* زر إخفاء/إظهار القسم بالكامل */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onToggleSubBoardVisibility(board.id)}
-                  className="h-9 w-9 hover:bg-accent/10"
-                  title={hiddenSubBoards.has(board.id) ? 'إظهار القسم' : 'إخفاء القسم'}
-                >
-                  {hiddenSubBoards.has(board.id) ? 
-                    <EyeOff className="h-5 w-5 text-muted-foreground" /> : 
-                    <Eye className="h-5 w-5 text-accent" />
-                  }
-                </Button>
+                {/* زر إخفاء/إظهار الأقسام الفرعية - يظهر فقط للأقسام الرئيسية التي لها أقسام فرعية */}
+                {!board.parentId && boards.filter(subBoard => subBoard.parentId === board.id).length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onToggleSubBoardVisibility(board.id)}
+                    className="h-9 w-9 hover:bg-accent/10"
+                    title={hiddenSubBoards.has(board.id) ? 'إظهار الأقسام الفرعية' : 'إخفاء الأقسام الفرعية'}
+                  >
+                    {hiddenSubBoards.has(board.id) ? 
+                      <EyeOff className="h-5 w-5 text-muted-foreground" /> : 
+                      <Eye className="h-5 w-5 text-accent" />
+                    }
+                  </Button>
+                )}
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -290,6 +292,23 @@ export function BoardColumn({
           {/* إدارة الأقسام الفرعية */}
           {!board.parentId && (
             <div className="mb-4 p-3 bg-gradient-to-r from-accent/5 to-primary/5 rounded-lg border border-accent/20">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-cairo font-bold text-sm text-accent">إدارة الأقسام الفرعية</h3>
+                {boards.filter(subBoard => subBoard.parentId === board.id).length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onToggleSubBoardVisibility(board.id)}
+                    className="h-8 px-3 hover:bg-accent/10 text-accent"
+                    title={hiddenSubBoards.has(board.id) ? 'إظهار الأقسام الفرعية' : 'إخفاء الأقسام الفرعية'}
+                  >
+                    {hiddenSubBoards.has(board.id) ? 
+                      <><EyeOff className="h-4 w-4 ml-1" /> إظهار الأقسام الفرعية</> : 
+                      <><Eye className="h-4 w-4 ml-1" /> إخفاء الأقسام الفرعية</>
+                    }
+                  </Button>
+                )}
+              </div>
               <SubBoardManager
                 board={board}
                 allBoards={boards}

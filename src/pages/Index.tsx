@@ -144,7 +144,20 @@ export default function Index() {
       await Promise.all(defaultBoards.map(saveBoard));
       setBoards(defaultBoards);
     } else {
-      setBoards(loadedBoards.sort((a, b) => a.order - b.order));
+      const sortedBoards = loadedBoards.sort((a, b) => a.order - b.order);
+      setBoards(sortedBoards);
+      
+      // تحميل حالة الأقسام الفرعية المخفية من قاعدة البيانات
+      const hiddenSubBoardsSet = new Set<string>();
+      sortedBoards.forEach(board => {
+        if (board.subBoardsHidden) {
+          hiddenSubBoardsSet.add(board.id);
+          // إضافة الأقسام الفرعية التابعة لهذا القسم
+          const subBoards = sortedBoards.filter(b => b.parentId === board.id);
+          subBoards.forEach(subBoard => hiddenSubBoardsSet.add(subBoard.id));
+        }
+      });
+      setHiddenSubBoards(hiddenSubBoardsSet);
     }
     
     setTasks(loadedTasks);
@@ -587,28 +600,51 @@ export default function Index() {
     }
   };
 
-  const handleToggleSubBoardVisibility = (boardId: string) => {
+  const handleToggleSubBoardVisibility = async (boardId: string) => {
+    const board = boards.find(b => b.id === boardId);
+    if (!board) return;
+
+    const isCurrentlyHidden = hiddenSubBoards.has(boardId);
+    const newHiddenState = !isCurrentlyHidden;
+
+    // تحديث الحالة المحلية
     setHiddenSubBoards(prev => {
       const newSet = new Set(prev);
-      const board = boards.find(b => b.id === boardId);
       
-      if (newSet.has(boardId)) {
-        // إظهار القسم الرئيسي
-        newSet.delete(boardId);
-        // إظهار جميع الأقسام الفرعية التابعة له
-        const subBoards = boards.filter(b => b.parentId === boardId);
-        subBoards.forEach(subBoard => newSet.delete(subBoard.id));
-        showToast(`تم إظهار القسم "${board?.title}" وجميع أقسامه الفرعية`, 'success');
-      } else {
+      if (newHiddenState) {
         // إخفاء القسم الرئيسي
         newSet.add(boardId);
         // إخفاء جميع الأقسام الفرعية التابعة له
         const subBoards = boards.filter(b => b.parentId === boardId);
         subBoards.forEach(subBoard => newSet.add(subBoard.id));
-        showToast(`تم إخفاء القسم "${board?.title}" وجميع أقسامه الفرعية`, 'info');
+      } else {
+        // إظهار القسم الرئيسي
+        newSet.delete(boardId);
+        // إظهار جميع الأقسام الفرعية التابعة له
+        const subBoards = boards.filter(b => b.parentId === boardId);
+        subBoards.forEach(subBoard => newSet.delete(subBoard.id));
       }
       return newSet;
     });
+
+    // تحديث قاعدة البيانات
+    try {
+      const updatedBoard = { ...board, subBoardsHidden: newHiddenState };
+      await saveBoard(updatedBoard);
+      
+      // تحديث قائمة الأقسام المحلية
+      setBoards(prev => prev.map(b => b.id === boardId ? updatedBoard : b));
+      
+      showToast(
+        newHiddenState 
+          ? `تم إخفاء القسم "${board.title}" وجميع أقسامه الفرعية` 
+          : `تم إظهار القسم "${board.title}" وجميع أقسامه الفرعية`, 
+        newHiddenState ? 'info' : 'success'
+      );
+    } catch (error) {
+      console.error('خطأ في حفظ حالة الأقسام الفرعية:', error);
+      showToast('حدث خطأ في حفظ الإعدادات', 'error');
+    }
   };
 
   const handleToggleCompletedTasks = async () => {
