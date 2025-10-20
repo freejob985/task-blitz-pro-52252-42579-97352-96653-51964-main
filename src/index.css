@@ -310,4 +310,156 @@ All colors MUST be HSL.
   .progress-ring {
     animation: progress-ring 1s ease-out;
   }
+
+  /* Mobile-specific styles */
+  @media (max-width: 768px) {
+    /* Improve touch targets */
+    button, [role="button"], input[type="button"], input[type="submit"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Better spacing for mobile */
+    .mobile-padding {
+      padding: 0.75rem;
+    }
+    
+    /* Improve text readability on mobile */
+    .mobile-text {
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+    
+    /* Better card spacing on mobile */
+    .mobile-card {
+      margin-bottom: 0.75rem;
+      padding: 0.75rem;
+    }
+    
+    /* Improve dialog sizing on mobile */
+    .mobile-dialog {
+      margin: 1rem;
+      max-width: calc(100vw - 2rem);
+    }
+    
+    /* Better button spacing on mobile */
+    .mobile-button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    /* Improve touch scrolling */
+    .mobile-scroll {
+      -webkit-overflow-scrolling: touch;
+      overflow-scrolling: touch;
+    }
+    
+    /* Better form inputs on mobile */
+    input, textarea, select {
+      font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    /* Improve tab navigation on mobile */
+    .mobile-tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    /* Better mobile grid layouts */
+    .mobile-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+    
+    /* Improve mobile task cards */
+    .mobile-task-card {
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid hsl(var(--border));
+      background: hsl(var(--card));
+      transition: all 0.2s ease;
+    }
+    
+    .mobile-task-card:active {
+      transform: scale(0.98);
+      background: hsl(var(--accent) / 0.1);
+    }
+    
+    /* Better mobile header */
+    .mobile-header {
+      padding: 0.75rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: hsl(var(--background) / 0.95);
+      backdrop-filter: blur(8px);
+    }
+    
+    /* Improve mobile navigation */
+    .mobile-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    
+    /* Better mobile modals */
+    .mobile-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 100;
+      background: hsl(var(--background));
+      overflow-y: auto;
+    }
+    
+    /* Improve mobile touch feedback */
+    .mobile-touchable {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    
+    .mobile-touchable:active {
+      background: hsl(var(--accent) / 0.1);
+    }
+  }
+
+  /* Tablet-specific styles */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .tablet-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    
+    .tablet-padding {
+      padding: 1rem;
+    }
+  }
+
+  /* Touch device optimizations */
+  @media (hover: none) and (pointer: coarse) {
+    /* Remove hover effects on touch devices */
+    .hover\:bg-accent:hover {
+      background: transparent;
+    }
+    
+    /* Improve touch targets */
+    .touch-target {
+      min-height: 48px;
+      min-width: 48px;
+    }
+    
+    /* Better touch feedback */
+    .touch-feedback:active {
+      transform: scale(0.95);
+      transition: transform 0.1s ease;
+    }
+  }
 }

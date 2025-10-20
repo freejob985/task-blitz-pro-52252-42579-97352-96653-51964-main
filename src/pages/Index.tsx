@@ -30,7 +30,7 @@ import {
 } from '@/components/BoardViewModes';
 import { QuickAddMode } from '@/components/QuickAddMode';
 import { MobileTaskManager } from '@/components/MobileTaskManager';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile, useDeviceType } from '@/hooks/use-mobile';
 import { initDB, getAllBoards, getAllTasks, saveBoard, saveTask, saveTasks, deleteBoard, deleteTask, archiveTask, getSettings, saveSettings, deleteAllData } from '@/lib/db';
 import { showToast } from '@/lib/toast';
 import { playSound } from '@/lib/sounds';
@@ -46,6 +46,7 @@ import type { Board, Task } from '@/types';
 
 export default function Index() {
   const isMobile = useIsMobile();
+  const { isTablet, isTouch } = useDeviceType();
   const [boards, setBoards] = useState<Board[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -898,92 +899,115 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
-        <div className="container mx-auto px-4 py-4">
+        <div className={`container mx-auto ${isMobile ? 'px-3 py-3' : 'px-4 py-4'}`}>
           <div className="flex items-center justify-between mb-4">
-            <h1 className="font-cairo text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <h1 className={`font-cairo font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent ${
+              isMobile ? 'text-xl' : isTablet ? 'text-2xl' : 'text-3xl'
+            }`}>
               مهام اليوم
             </h1>
-            <div className="flex gap-2 items-center">
+            <div className={`flex gap-2 items-center ${isMobile ? 'flex-wrap' : ''}`}>
               {!isStandalone && (
                 <Link to="/install">
-                  <Button variant="outline" size="icon" title="تثبيت التطبيق">
-                    <Smartphone className="h-5 w-5" />
+                  <Button variant="outline" size={isMobile ? "sm" : "icon"} title="تثبيت التطبيق">
+                    <Smartphone className={isMobile ? "h-4 w-4" : "h-5 w-5"} />
+                    {isMobile && <span className="ml-1 text-xs">تثبيت</span>}
                   </Button>
                 </Link>
               )}
               <Button 
                 onClick={handleToggleNotifications} 
                 variant={notificationsEnabled ? "default" : "outline"} 
-                size="icon"
+                size={isMobile ? "sm" : "icon"}
                 title={notificationsEnabled ? 'إيقاف الإشعارات' : 'تفعيل الإشعارات'}
               >
-                {notificationsEnabled ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
+                {notificationsEnabled ? <Bell className={isMobile ? "h-4 w-4" : "h-5 w-5"} /> : <BellOff className={isMobile ? "h-4 w-4" : "h-5 w-5"} />}
+                {isMobile && <span className="ml-1 text-xs">إشعارات</span>}
               </Button>
-              <Button onClick={() => setArchiveModalOpen(true)} variant="outline" size="icon" title="الأرشيف">
-                <Archive className="h-5 w-5" />
+              <Button onClick={() => setArchiveModalOpen(true)} variant="outline" size={isMobile ? "sm" : "icon"} title="الأرشيف">
+                <Archive className={isMobile ? "h-4 w-4" : "h-5 w-5"} />
+                {isMobile && <span className="ml-1 text-xs">أرشيف</span>}
               </Button>
               <FocusTimerBadge onClick={() => setTimerModalOpen(true)} />
-              <Button onClick={() => setTimerModalOpen(true)} variant="outline" size="icon">
-                <Timer className="h-5 w-5" />
+              <Button onClick={() => setTimerModalOpen(true)} variant="outline" size={isMobile ? "sm" : "icon"}>
+                <Timer className={isMobile ? "h-4 w-4" : "h-5 w-5"} />
+                {isMobile && <span className="ml-1 text-xs">مؤقت</span>}
               </Button>
-              <Button onClick={() => setStatusModalOpen(true)} variant="outline" size="icon" title="إدارة الحالات">
-                <Settings2 className="h-5 w-5" />
-              </Button>
-              <Button onClick={() => setBoardManagerOpen(true)} variant="outline" size="icon" title="إدارة الأقسام">
-                <FolderTree className="h-5 w-5" />
-              </Button>
-              <Button onClick={() => setQuickAddModeOpen(true)} variant="outline" size="icon" title="وضع الإضافة السريعة">
-                <Zap className="h-5 w-5" />
-              </Button>
-              <Button onClick={handleCopyAllTasks} variant="outline" size="icon" title="نسخ جميع المهام">
-                <Copy className="h-5 w-5" />
-              </Button>
-              <Button onClick={handleDeleteAllData} variant="outline" size="icon" title="حذف جميع البيانات" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                <Trash2 className="h-5 w-5" />
-              </Button>
-              <Button onClick={() => setExportModalOpen(true)} variant="outline" size="icon" title="تصدير المهام">
-                <Download className="h-5 w-5" />
-              </Button>
-              <Button onClick={handleToggleTheme} variant="outline" size="icon" title={theme === 'light' ? 'الوضع المظلم' : 'الوضع المضيء'}>
-                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              {!isMobile && (
+                <>
+                  <Button onClick={() => setStatusModalOpen(true)} variant="outline" size="icon" title="إدارة الحالات">
+                    <Settings2 className="h-5 w-5" />
+                  </Button>
+                  <Button onClick={() => setBoardManagerOpen(true)} variant="outline" size="icon" title="إدارة الأقسام">
+                    <FolderTree className="h-5 w-5" />
+                  </Button>
+                  <Button onClick={() => setQuickAddModeOpen(true)} variant="outline" size="icon" title="وضع الإضافة السريعة">
+                    <Zap className="h-5 w-5" />
+                  </Button>
+                  <Button onClick={handleCopyAllTasks} variant="outline" size="icon" title="نسخ جميع المهام">
+                    <Copy className="h-5 w-5" />
+                  </Button>
+                  <Button onClick={handleDeleteAllData} variant="outline" size="icon" title="حذف جميع البيانات" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
+                  <Button onClick={() => setExportModalOpen(true)} variant="outline" size="icon" title="تصدير المهام">
+                    <Download className="h-5 w-5" />
+                  </Button>
+                </>
+              )}
+              <Button onClick={handleToggleTheme} variant="outline" size={isMobile ? "sm" : "icon"} title={theme === 'light' ? 'الوضع المظلم' : 'الوضع المضيء'}>
+                {theme === 'light' ? <Moon className={isMobile ? "h-4 w-4" : "h-5 w-5"} /> : <Sun className={isMobile ? "h-4 w-4" : "h-5 w-5"} />}
+                {isMobile && <span className="ml-1 text-xs">مظهر</span>}
               </Button>
             </div>
           </div>
           
-          <div className="flex gap-2">
-            <SearchBar searchQuery={searchQuery} onSearchChange={setSearchQuery} filters={filters} onFiltersChange={setFilters} boards={boards} allTags={allTags} />
-            <Button onClick={() => setBulkModalOpen(true)} variant="secondary">
-              <Layers className="h-4 w-4 ml-2" />
-              مهام متعددة
-            </Button>
-            <Button onClick={() => setImportModalOpen(true)} variant="secondary">
-              <Upload className="h-4 w-4 ml-2" />
-              استيراد
-            </Button>
-            <Button onClick={async () => { 
-              const { value } = await Swal.fire({ 
-                title: 'قسم جديد', 
-                input: 'text', 
-                inputPlaceholder: 'اسم القسم', 
-                showCancelButton: true,
-                customClass: {
-                  popup: 'z-[9999]'
-                }
-              }); 
-              if (value) { 
-                const newBoard: Board = { 
-                  id: `board-${Date.now()}`, 
-                  title: value, 
-                  order: boards.length, 
-                  createdAt: new Date().toISOString() 
-                }; 
-                setBoards([...boards, newBoard]); 
-                await saveBoard(newBoard); 
-              } 
-            }}>
-              <Plus className="h-4 w-4 ml-2" />
-              قسم جديد
-            </Button>
+          <div className={`flex gap-2 ${isMobile ? 'flex-col' : 'flex-row'}`}>
+            <div className={isMobile ? 'w-full' : 'flex-1'}>
+              <SearchBar searchQuery={searchQuery} onSearchChange={setSearchQuery} filters={filters} onFiltersChange={setFilters} boards={boards} allTags={allTags} />
+            </div>
+            <div className={`flex gap-2 ${isMobile ? 'w-full' : ''}`}>
+              {!isMobile && (
+                <>
+                  <Button onClick={() => setBulkModalOpen(true)} variant="secondary">
+                    <Layers className="h-4 w-4 ml-2" />
+                    مهام متعددة
+                  </Button>
+                  <Button onClick={() => setImportModalOpen(true)} variant="secondary">
+                    <Upload className="h-4 w-4 ml-2" />
+                    استيراد
+                  </Button>
+                </>
+              )}
+              <Button 
+                onClick={async () => { 
+                  const { value } = await Swal.fire({ 
+                    title: 'قسم جديد', 
+                    input: 'text', 
+                    inputPlaceholder: 'اسم القسم', 
+                    showCancelButton: true,
+                    customClass: {
+                      popup: 'z-[9999]'
+                    }
+                  }); 
+                  if (value) { 
+                    const newBoard: Board = { 
+                      id: `board-${Date.now()}`, 
+                      title: value, 
+                      order: boards.length, 
+                      createdAt: new Date().toISOString() 
+                    }; 
+                    setBoards([...boards, newBoard]); 
+                    await saveBoard(newBoard); 
+                  } 
+                }}
+                className={isMobile ? 'flex-1' : ''}
+                size={isMobile ? 'sm' : 'default'}
+              >
+                <Plus className="h-4 w-4 ml-2" />
+                {isMobile ? 'قسم جديد' : 'قسم جديد'}
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -1029,7 +1053,7 @@ export default function Index() {
           }}
         />
       ) : (
-        <main className="container mx-auto px-4 py-6">
+        <main className={`container mx-auto ${isMobile ? 'px-3 py-4' : isTablet ? 'px-4 py-5' : 'px-4 py-6'}`}>
         {/* الإحصائيات */}
         <Statistics tasks={tasks} />
 

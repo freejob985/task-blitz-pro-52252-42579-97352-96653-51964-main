@@ -1,6 +1,6 @@
 // مكون إدارة المهام للهواتف المحمولة
-import { useState } from 'react';
-import { Plus, Layers, FolderPlus, Edit2, Trash2, CheckCircle, Clock, AlertCircle, XCircle, Star, Archive, Eye, EyeOff } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Plus, Layers, FolderPlus, Edit2, Trash2, CheckCircle, Clock, AlertCircle, XCircle, Star, Archive, Eye, EyeOff, MoreVertical, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -9,7 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { showToast } from '@/lib/toast';
+import { useDeviceType } from '@/hooks/use-mobile';
 import type { Board, Task, TaskStatus, TaskPriority, TaskDifficulty } from '@/types';
 
 interface MobileTaskManagerProps {
@@ -37,6 +39,7 @@ export function MobileTaskManager({
   hiddenSubBoards,
   onBulkAdd,
 }: MobileTaskManagerProps) {
+  const { isMobile, isTablet, isTouch } = useDeviceType();
   const [activeTab, setActiveTab] = useState('tasks');
   const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [newBoardOpen, setNewBoardOpen] = useState(false);
@@ -51,6 +54,7 @@ export function MobileTaskManager({
   const [newSubBoardTitle, setNewSubBoardTitle] = useState('');
   const [newSubBoardDescription, setNewSubBoardDescription] = useState('');
   const [parentBoardId, setParentBoardId] = useState<string>('');
+  const [swipedTaskId, setSwipedTaskId] = useState<string | null>(null);
 
   // الأقسام الرئيسية فقط
   const mainBoards = boards.filter(board => !board.parentId && !board.isArchived);
@@ -141,14 +145,65 @@ export function MobileTaskManager({
     }
   };
 
+  // Touch gesture handling
+  const handleTouchStart = useCallback((e: React.TouchEvent, taskId: string) => {
+    if (!isTouch) return;
+    const touch = e.touches[0];
+    const startX = touch.clientX;
+    const startY = touch.clientY;
+    
+    const handleTouchMove = (e: TouchEvent) => {
+      const currentTouch = e.touches[0];
+      const deltaX = currentTouch.clientX - startX;
+      const deltaY = currentTouch.clientY - startY;
+      
+      // Only handle horizontal swipes
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+        setSwipedTaskId(taskId);
+      }
+    };
+    
+    const handleTouchEnd = () => {
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      setTimeout(() => setSwipedTaskId(null), 2000);
+    };
+    
+    document.addEventListener('touchmove', handleTouchMove);
+    document.addEventListener('touchend', handleTouchEnd);
+  }, [isTouch]);
+
+  // Quick status change for mobile
+  const handleQuickStatusChange = useCallback((taskId: string, currentStatus: TaskStatus) => {
+    const statusOrder: TaskStatus[] = ['waiting', 'working', 'completed', 'frozen'];
+    const currentIndex = statusOrder.indexOf(currentStatus);
+    const nextIndex = (currentIndex + 1) % statusOrder.length;
+    const nextStatus = statusOrder[nextIndex];
+    
+    onTaskStatusChange(taskId, nextStatus);
+    showToast(`تم تغيير الحالة إلى ${getStatusLabel(nextStatus)}`, 'success');
+  }, [onTaskStatusChange]);
+
+  const getStatusLabel = (status: TaskStatus) => {
+    switch (status) {
+      case 'waiting': return 'في الانتظار';
+      case 'working': return 'قيد التنفيذ';
+      case 'completed': return 'مكتملة';
+      case 'frozen': return 'مجمدة';
+      default: return 'غير محدد';
+    }
+  };
+
   return (
-    <div className="p-4 space-y-4 bg-gradient-to-br from-background to-muted/20 min-h-screen">
+    <div className={`${isMobile ? 'p-3' : 'p-4'} space-y-4 bg-gradient-to-br from-background to-muted/20 min-h-screen`}>
       {/* العنوان الرئيسي */}
       <div className="text-center mb-6">
-        <h1 className="text-2xl font-cairo font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-cairo font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent`}>
           إدارة المهام
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">إدارة مهامك بسهولة على الهاتف</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          {isMobile ? 'إدارة مهامك بسهولة على الهاتف' : 'إدارة مهامك بسهولة'}
+        </p>
       </div>
 
       {/* التبويبات */}
@@ -254,23 +309,63 @@ export function MobileTaskManager({
 
                   {/* مهام القسم الرئيسي */}
                   <div className="space-y-1">
-                    {boardTasks.slice(0, 5).map(task => (
-                      <div key={task.id} className="flex items-center gap-2 p-2 bg-muted/30 rounded border">
-                        {getStatusIcon(task.status)}
-                        <span className="text-sm flex-1 truncate">{task.title}</span>
-                        <div className="flex gap-1">
+                    {boardTasks.slice(0, isMobile ? 3 : 5).map(task => (
+                      <div 
+                        key={task.id} 
+                        className={`relative flex items-center gap-2 p-3 bg-muted/30 rounded-lg border transition-all duration-200 ${
+                          swipedTaskId === task.id ? 'bg-primary/10 border-primary/30' : 'hover:bg-muted/50'
+                        } ${isTouch ? 'cursor-pointer' : ''}`}
+                        onTouchStart={(e) => handleTouchStart(e, task.id)}
+                        onClick={() => isTouch && handleQuickStatusChange(task.id, task.status)}
+                      >
+                        <div className="flex-shrink-0">
+                          {getStatusIcon(task.status)}
+                        </div>
+                        <span className="text-sm flex-1 truncate font-medium">{task.title}</span>
+                        <div className="flex gap-1 flex-shrink-0">
                           <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
-                            {task.priority}
+                            {task.priority === 'high' ? 'عالي' : task.priority === 'medium' ? 'متوسط' : 'منخفض'}
                           </Badge>
                           <Badge className={`text-xs ${getDifficultyColor(task.difficulty)}`}>
-                            {task.difficulty}
+                            {task.difficulty === 'easy' ? 'سهل' : task.difficulty === 'medium' ? 'متوسط' : task.difficulty === 'hard' ? 'صعب' : 'خبير'}
                           </Badge>
                         </div>
+                        {isTouch && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                <MoreVertical className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => onEditTask(task)}>
+                                <Edit2 className="h-4 w-4 ml-2" />
+                                تعديل
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => onDeleteTask(task.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 ml-2" />
+                                حذف
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                        {swipedTaskId === task.id && (
+                          <div className="absolute inset-0 bg-primary/5 border-2 border-primary/30 rounded-lg flex items-center justify-center">
+                            <div className="flex items-center gap-2 text-primary">
+                              <ArrowLeft className="h-4 w-4" />
+                              <span className="text-sm font-medium">اضغط لتغيير الحالة</span>
+                              <ArrowRight className="h-4 w-4" />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
-                    {boardTasks.length > 5 && (
-                      <p className="text-xs text-muted-foreground text-center">
-                        +{boardTasks.length - 5} مهمة أخرى
+                    {boardTasks.length > (isMobile ? 3 : 5) && (
+                      <p className="text-xs text-muted-foreground text-center py-2">
+                        +{boardTasks.length - (isMobile ? 3 : 5)} مهمة أخرى
                       </p>
                     )}
                   </div>
@@ -343,9 +438,9 @@ export function MobileTaskManager({
                       إضافة مهمة
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
+                  <DialogContent className={`${isMobile ? 'mx-4 max-w-sm' : 'sm:max-w-md'}`}>
                     <DialogHeader>
-                      <DialogTitle>إضافة مهمة جديدة</DialogTitle>
+                      <DialogTitle className={isMobile ? 'text-lg' : ''}>إضافة مهمة جديدة</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div>
@@ -439,9 +534,9 @@ export function MobileTaskManager({
                       إضافة قسم
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
+                  <DialogContent className={`${isMobile ? 'mx-4 max-w-sm' : 'sm:max-w-md'}`}>
                     <DialogHeader>
-                      <DialogTitle>إضافة قسم جديد</DialogTitle>
+                      <DialogTitle className={isMobile ? 'text-lg' : ''}>إضافة قسم جديد</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div>
@@ -491,9 +586,9 @@ export function MobileTaskManager({
                       إضافة قسم فرعي
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
+                  <DialogContent className={`${isMobile ? 'mx-4 max-w-sm' : 'sm:max-w-md'}`}>
                     <DialogHeader>
-                      <DialogTitle>إضافة قسم فرعي</DialogTitle>
+                      <DialogTitle className={isMobile ? 'text-lg' : ''}>إضافة قسم فرعي</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div>
