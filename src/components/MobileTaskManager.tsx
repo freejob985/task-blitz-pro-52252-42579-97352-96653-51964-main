@@ -225,26 +225,51 @@ export function MobileTaskManager({
     showToast(newStatus === 'completed' ? 'تم تحديد المهمة كمكتملة' : 'تم إلغاء تحديد المهمة كمكتملة', 'success');
   }, [onTaskStatusChange]);
 
-  // Drag and Drop handlers for mobile
+  // Drag and Drop handlers for mobile - improved
   const handleDragStart = useCallback((e: React.DragEvent, taskId: string) => {
     setDraggedTaskId(taskId);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', taskId);
     
-    // Add visual feedback
-    if (e.currentTarget instanceof HTMLElement) {
-      e.currentTarget.style.opacity = '0.5';
-    }
+    // Create a custom drag image for better visual feedback
+    const dragElement = e.currentTarget as HTMLElement;
+    const dragImage = dragElement.cloneNode(true) as HTMLElement;
+    dragImage.style.transform = 'rotate(5deg)';
+    dragImage.style.opacity = '0.8';
+    dragImage.style.border = '2px solid #3b82f6';
+    dragImage.style.borderRadius = '12px';
+    dragImage.style.boxShadow = '0 10px 25px rgba(0,0,0,0.3)';
+    dragImage.style.pointerEvents = 'none';
+    dragImage.style.position = 'absolute';
+    dragImage.style.top = '-1000px';
+    dragImage.style.left = '-1000px';
+    dragImage.style.zIndex = '9999';
+    
+    document.body.appendChild(dragImage);
+    e.dataTransfer.setDragImage(dragImage, 0, 0);
+    
+    // Add visual feedback to original element
+    dragElement.style.opacity = '0.3';
+    dragElement.style.transform = 'scale(0.95)';
+    dragElement.style.transition = 'all 0.2s ease';
+    
+    // Clean up drag image after a short delay
+    setTimeout(() => {
+      if (document.body.contains(dragImage)) {
+        document.body.removeChild(dragImage);
+      }
+    }, 0);
   }, []);
 
   const handleDragEnd = useCallback((e: React.DragEvent) => {
     setDraggedTaskId(null);
     setDragOverBoardId(null);
     
-    // Remove visual feedback
-    if (e.currentTarget instanceof HTMLElement) {
-      e.currentTarget.style.opacity = '1';
-    }
+    // Remove visual feedback and return to original state
+    const dragElement = e.currentTarget as HTMLElement;
+    dragElement.style.opacity = '1';
+    dragElement.style.transform = 'scale(1)';
+    dragElement.style.transition = 'all 0.3s ease';
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent, boardId: string) => {
@@ -264,25 +289,40 @@ export function MobileTaskManager({
     e.preventDefault();
     const taskId = e.dataTransfer.getData('text/plain');
     
-    if (!taskId || !draggedTaskId) return;
-    
-    const task = tasks.find(t => t.id === taskId);
-    if (!task || task.boardId === targetBoardId) {
+    if (!taskId || !draggedTaskId) {
       setDragOverBoardId(null);
       return;
     }
     
-    // Move task to new board using the parent's move function
-    onMoveTask(taskId, targetBoardId);
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) {
+      setDragOverBoardId(null);
+      return;
+    }
     
-    // Show success message
-    const targetBoard = boards.find(b => b.id === targetBoardId);
-    showToast(`تم نقل المهمة إلى ${targetBoard?.title || 'القسم الجديد'}`, 'success');
+    // Check if dropping on the same board
+    if (task.boardId === targetBoardId) {
+      setDragOverBoardId(null);
+      showToast('المهمة موجودة بالفعل في هذا القسم', 'info');
+      return;
+    }
+    
+    try {
+      // Move task to new board using the parent's move function
+      onMoveTask(taskId, targetBoardId);
+      
+      // Show success message
+      const targetBoard = boards.find(b => b.id === targetBoardId);
+      showToast(`تم نقل المهمة إلى ${targetBoard?.title || 'القسم الجديد'}`, 'success');
+    } catch (error) {
+      console.error('Error moving task:', error);
+      showToast('حدث خطأ أثناء نقل المهمة', 'error');
+    }
     
     setDragOverBoardId(null);
   }, [draggedTaskId, tasks, boards, onMoveTask]);
 
-  // Touch drag handlers
+  // Touch drag handlers - improved for better mobile experience
   const handleTouchStart = useCallback((e: React.TouchEvent, taskId: string) => {
     if (!isTouch) return;
     setDraggedTaskId(taskId);
@@ -290,19 +330,44 @@ export function MobileTaskManager({
     const touch = e.touches[0];
     const startX = touch.clientX;
     const startY = touch.clientY;
+    const originalTask = tasks.find(t => t.id === taskId);
+    
+    let isDragging = false;
+    let dragElement: HTMLElement | null = null;
     
     const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
       const currentTouch = e.touches[0];
       const deltaX = currentTouch.clientX - startX;
       const deltaY = currentTouch.clientY - startY;
       
       // Check if it's a drag gesture
-      if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+      if (Math.abs(deltaX) > 15 || Math.abs(deltaY) > 15) {
+        if (!isDragging) {
+          isDragging = true;
+          dragElement = document.querySelector(`[data-task-id="${taskId}"]`) as HTMLElement;
+          if (dragElement) {
+            dragElement.style.transition = 'none';
+            dragElement.style.zIndex = '1000';
+            dragElement.style.boxShadow = '0 10px 25px rgba(0,0,0,0.3)';
+            dragElement.style.border = '2px solid #3b82f6';
+          }
+        }
+        
         // Add visual feedback for dragging
-        const element = e.target as HTMLElement;
-        if (element) {
-          element.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-          element.style.opacity = '0.7';
+        if (dragElement) {
+          dragElement.style.transform = `translate(${deltaX}px, ${deltaY}px) rotate(2deg)`;
+          dragElement.style.opacity = '0.8';
+        }
+        
+        // Check for drop zones
+        const element = document.elementFromPoint(currentTouch.clientX, currentTouch.clientY);
+        const boardElement = element?.closest('[data-board-id]');
+        if (boardElement) {
+          const boardId = boardElement.getAttribute('data-board-id');
+          setDragOverBoardId(boardId);
+        } else {
+          setDragOverBoardId(null);
         }
       }
     };
@@ -311,22 +376,32 @@ export function MobileTaskManager({
       const touch = e.changedTouches[0];
       const element = document.elementFromPoint(touch.clientX, touch.clientY);
       
-      // Check if dropped on a board
+      // Check if dropped on a valid board
       const boardElement = element?.closest('[data-board-id]');
-      if (boardElement) {
+      if (boardElement && isDragging) {
         const boardId = boardElement.getAttribute('data-board-id');
-        if (boardId && boardId !== tasks.find(t => t.id === taskId)?.boardId) {
-          onMoveTask(taskId, boardId);
-          const targetBoard = boards.find(b => b.id === boardId);
-          showToast(`تم نقل المهمة إلى ${targetBoard?.title || 'القسم الجديد'}`, 'success');
+        if (boardId && originalTask && boardId !== originalTask.boardId) {
+          try {
+            onMoveTask(taskId, boardId);
+            const targetBoard = boards.find(b => b.id === boardId);
+            showToast(`تم نقل المهمة إلى ${targetBoard?.title || 'القسم الجديد'}`, 'success');
+          } catch (error) {
+            console.error('Error moving task:', error);
+            showToast('حدث خطأ أثناء نقل المهمة', 'error');
+          }
+        } else if (boardId === originalTask?.boardId) {
+          showToast('المهمة موجودة بالفعل في هذا القسم', 'info');
         }
       }
       
-      // Reset visual feedback
-      const draggedElement = document.querySelector(`[data-task-id="${taskId}"]`);
-      if (draggedElement) {
-        (draggedElement as HTMLElement).style.transform = '';
-        (draggedElement as HTMLElement).style.opacity = '1';
+      // Reset visual feedback and return to original position
+      if (dragElement) {
+        dragElement.style.transition = 'all 0.3s ease';
+        dragElement.style.transform = '';
+        dragElement.style.opacity = '1';
+        dragElement.style.zIndex = '';
+        dragElement.style.boxShadow = '';
+        dragElement.style.border = '';
       }
       
       setDraggedTaskId(null);
@@ -352,13 +427,45 @@ export function MobileTaskManager({
         </p>
       </div>
 
-      {/* التبويبات */}
+      {/* التبويبات المحسنة */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="tasks">المهام</TabsTrigger>
-          <TabsTrigger value="all-tasks">جميع المهام</TabsTrigger>
-          <TabsTrigger value="boards">الأقسام</TabsTrigger>
-          <TabsTrigger value="add">إضافة</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 bg-gradient-to-r from-primary/10 to-accent/10 border-2 border-primary/20 rounded-xl p-1">
+          <TabsTrigger 
+            value="tasks" 
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-200 rounded-lg font-medium"
+          >
+            <div className="flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" />
+              <span className="hidden sm:inline">المهام</span>
+            </div>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="all-tasks"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-200 rounded-lg font-medium"
+          >
+            <div className="flex items-center gap-1">
+              <Layers className="h-3 w-3" />
+              <span className="hidden sm:inline">جميع المهام</span>
+            </div>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="boards"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-200 rounded-lg font-medium"
+          >
+            <div className="flex items-center gap-1">
+              <FolderPlus className="h-3 w-3" />
+              <span className="hidden sm:inline">الأقسام</span>
+            </div>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="add"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-200 rounded-lg font-medium"
+          >
+            <div className="flex items-center gap-1">
+              <Plus className="h-3 w-3" />
+              <span className="hidden sm:inline">إضافة</span>
+            </div>
+          </TabsTrigger>
         </TabsList>
 
         {/* تبويب المهام */}
@@ -425,7 +532,7 @@ export function MobileTaskManager({
                                 {subBoard.description && (
                                   <p className="text-xs text-muted-foreground mb-2">{subBoard.description}</p>
                                 )}
-                                <div className="space-y-1">
+                                <div className="space-y-2">
                                   {subBoardTasks.slice(0, 3).map(task => (
                                     <div 
                                       key={task.id} 
@@ -434,29 +541,31 @@ export function MobileTaskManager({
                                       onDragStart={(e) => handleDragStart(e, task.id)}
                                       onDragEnd={handleDragEnd}
                                       onTouchStart={(e) => handleTouchStart(e, task.id)}
-                                      className={`flex items-center gap-2 p-2 bg-background rounded border transition-all duration-200 ${
-                                        draggedTaskId === task.id ? 'opacity-50 scale-95' : ''
+                                      className={`group bg-gradient-to-r from-background to-muted/10 rounded-lg border border-accent/20 p-3 transition-all duration-300 hover:shadow-md ${
+                                        draggedTaskId === task.id ? 'opacity-50 scale-95 shadow-lg' : 'hover:border-accent/40'
                                       } ${isTouch ? 'cursor-grab active:cursor-grabbing' : ''}`}
                                     >
-                                      <Checkbox
-                                        checked={task.status === 'completed'}
-                                        onCheckedChange={() => handleToggleCompletion(task.id, task.status)}
-                                        className="h-3 w-3 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                                      />
-                                      <GripVertical className="h-3 w-3 text-muted-foreground" />
-                                      {getStatusIcon(task.status)}
-                                      <span className={`text-xs flex-1 truncate ${
-                                        task.status === 'completed' ? 'line-through text-muted-foreground' : ''
-                                      }`}>
-                                        {task.title}
-                                      </span>
-                                      <div className="flex gap-1">
-                                        <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
-                                          {task.priority === 'high' ? 'عالي' : task.priority === 'medium' ? 'متوسط' : 'منخفض'}
-                                        </Badge>
-                                        <Badge className={`text-xs ${getDifficultyColor(task.difficulty)}`}>
-                                          {task.difficulty === 'easy' ? 'سهل' : task.difficulty === 'medium' ? 'متوسط' : task.difficulty === 'hard' ? 'صعب' : 'خبير'}
-                                        </Badge>
+                                      <div className="flex items-center gap-2">
+                                        <Checkbox
+                                          checked={task.status === 'completed'}
+                                          onCheckedChange={() => handleToggleCompletion(task.id, task.status)}
+                                          className="h-3 w-3 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                                        />
+                                        <GripVertical className="h-3 w-3 text-muted-foreground group-hover:text-accent transition-colors" />
+                                        {getStatusIcon(task.status)}
+                                        <span className={`text-sm flex-1 truncate font-medium ${
+                                          task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground'
+                                        }`}>
+                                          {task.title}
+                                        </span>
+                                        <div className="flex gap-1">
+                                          <Badge className={`text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                                            {task.priority === 'high' ? 'عالي' : task.priority === 'medium' ? 'متوسط' : 'منخفض'}
+                                          </Badge>
+                                          <Badge className={`text-xs font-medium ${getDifficultyColor(task.difficulty)}`}>
+                                            {task.difficulty === 'easy' ? 'سهل' : task.difficulty === 'medium' ? 'متوسط' : task.difficulty === 'hard' ? 'صعب' : 'خبير'}
+                                          </Badge>
+                                        </div>
                                       </div>
                                     </div>
                                   ))}
@@ -474,8 +583,8 @@ export function MobileTaskManager({
                     </div>
                   )}
 
-                  {/* مهام القسم الرئيسي */}
-                  <div className="space-y-1">
+                  {/* مهام القسم الرئيسي المحسنة */}
+                  <div className="space-y-2">
                     {boardTasks.slice(0, isMobile ? 3 : 5).map(task => (
                       <div 
                         key={task.id} 
@@ -487,97 +596,120 @@ export function MobileTaskManager({
                           handleTouchStart(e, task.id);
                           handleSwipeStart(e, task.id);
                         }}
-                        className={`relative flex items-center gap-2 p-3 bg-muted/30 rounded-lg border transition-all duration-200 ${
-                          swipedTaskId === task.id ? 'bg-primary/10 border-primary/30' : 'hover:bg-muted/50'
+                        className={`relative group bg-gradient-to-r from-background to-muted/20 rounded-xl border-2 transition-all duration-300 hover:shadow-lg ${
+                          swipedTaskId === task.id ? 'border-primary/50 bg-primary/5 shadow-lg' : 'border-primary/20 hover:border-primary/40'
                         } ${isTouch ? 'cursor-grab active:cursor-grabbing' : ''} ${
-                          draggedTaskId === task.id ? 'opacity-50 scale-95' : ''
+                          draggedTaskId === task.id ? 'opacity-50 scale-95 shadow-2xl' : ''
                         }`}
                         onClick={() => isTouch && handleQuickStatusChange(task.id, task.status)}
                       >
-                        {/* Checkbox for completion */}
-                        <div className="flex-shrink-0">
-                          <Checkbox
-                            checked={task.status === 'completed'}
-                            onCheckedChange={() => handleToggleCompletion(task.id, task.status)}
-                            className="h-3 w-3 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                          />
+                        <div className="p-4">
+                          {/* Header with task title and status */}
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              {/* Checkbox for completion */}
+                              <div className="flex-shrink-0">
+                                <Checkbox
+                                  checked={task.status === 'completed'}
+                                  onCheckedChange={() => handleToggleCompletion(task.id, task.status)}
+                                  className="h-4 w-4 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                                />
+                              </div>
+                              
+                              {/* Drag handle */}
+                              <div className="flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors">
+                                <GripVertical className="h-4 w-4" />
+                              </div>
+                              
+                              {/* Status icon */}
+                              <div className="flex-shrink-0">
+                                {getStatusIcon(task.status)}
+                              </div>
+                              
+                              {/* Task title - improved visibility */}
+                              <div className="flex-1 min-w-0">
+                                <h3 className={`text-base font-semibold leading-tight ${
+                                  task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground'
+                                }`}>
+                                  {task.title}
+                                </h3>
+                                {task.description && (
+                                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                                    {task.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Actions menu */}
+                            <div className="flex-shrink-0 ml-2">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleToggleCompletion(task.id, task.status)}>
+                                    <CheckCircle className="h-4 w-4 ml-2" />
+                                    {task.status === 'completed' ? 'إلغاء التحديد' : 'تحديد كمكتمل'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => onEditTask(task)}>
+                                    <Edit2 className="h-4 w-4 ml-2" />
+                                    تعديل
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleArchiveTask(task.id)}>
+                                    <Archive className="h-4 w-4 ml-2" />
+                                    أرشفة
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => onDeleteTask(task.id)}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 ml-2" />
+                                    حذف
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
+                          
+                          {/* Priority and difficulty badges */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex gap-2">
+                              <Badge className={`text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                                {task.priority === 'high' ? 'عالي' : task.priority === 'medium' ? 'متوسط' : 'منخفض'}
+                              </Badge>
+                              <Badge className={`text-xs font-medium ${getDifficultyColor(task.difficulty)}`}>
+                                {task.difficulty === 'easy' ? 'سهل' : task.difficulty === 'medium' ? 'متوسط' : task.difficulty === 'hard' ? 'صعب' : 'خبير'}
+                              </Badge>
+                            </div>
+                            
+                            {/* Status label */}
+                            <div className="text-xs text-muted-foreground font-medium">
+                              {getStatusLabel(task.status)}
+                            </div>
+                          </div>
                         </div>
-                        
-                        {/* Drag handle */}
-                        <div className="flex-shrink-0 text-muted-foreground">
-                          <GripVertical className="h-3 w-3" />
-                        </div>
-                        
-                        {/* Status icon */}
-                        <div className="flex-shrink-0">
-                          {getStatusIcon(task.status)}
-                        </div>
-                        
-                        {/* Task title */}
-                        <span className={`text-sm flex-1 truncate font-medium ${
-                          task.status === 'completed' ? 'line-through text-muted-foreground' : ''
-                        }`}>
-                          {task.title}
-                        </span>
-                        
-                        {/* Priority and difficulty badges */}
-                        <div className="flex gap-1 flex-shrink-0">
-                          <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
-                            {task.priority === 'high' ? 'عالي' : task.priority === 'medium' ? 'متوسط' : 'منخفض'}
-                          </Badge>
-                          <Badge className={`text-xs ${getDifficultyColor(task.difficulty)}`}>
-                            {task.difficulty === 'easy' ? 'سهل' : task.difficulty === 'medium' ? 'متوسط' : task.difficulty === 'hard' ? 'صعب' : 'خبير'}
-                          </Badge>
-                        </div>
-                        
-                        {/* Actions menu */}
-                        {isTouch && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                <MoreVertical className="h-3 w-3" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleToggleCompletion(task.id, task.status)}>
-                                <CheckCircle className="h-4 w-4 ml-2" />
-                                {task.status === 'completed' ? 'إلغاء التحديد' : 'تحديد كمكتمل'}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => onEditTask(task)}>
-                                <Edit2 className="h-4 w-4 ml-2" />
-                                تعديل
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleArchiveTask(task.id)}>
-                                <Archive className="h-4 w-4 ml-2" />
-                                أرشفة
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => onDeleteTask(task.id)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 ml-2" />
-                                حذف
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
                         
                         {/* Swipe indicator */}
                         {swipedTaskId === task.id && (
-                          <div className="absolute inset-0 bg-primary/5 border-2 border-primary/30 rounded-lg flex items-center justify-center">
+                          <div className="absolute inset-0 bg-primary/10 border-2 border-primary/50 rounded-xl flex items-center justify-center backdrop-blur-sm">
                             <div className="flex items-center gap-2 text-primary">
-                              <ArrowLeft className="h-4 w-4" />
-                              <span className="text-sm font-medium">اضغط لتغيير الحالة</span>
-                              <ArrowRight className="h-4 w-4" />
+                              <ArrowLeft className="h-5 w-5" />
+                              <span className="text-sm font-semibold">اضغط لتغيير الحالة</span>
+                              <ArrowRight className="h-5 w-5" />
                             </div>
                           </div>
                         )}
                       </div>
                     ))}
                     {boardTasks.length > (isMobile ? 3 : 5) && (
-                      <p className="text-xs text-muted-foreground text-center py-2">
-                        +{boardTasks.length - (isMobile ? 3 : 5)} مهمة أخرى
-                      </p>
+                      <div className="text-center py-3">
+                        <p className="text-sm text-muted-foreground font-medium">
+                          +{boardTasks.length - (isMobile ? 3 : 5)} مهمة أخرى
+                        </p>
+                      </div>
                     )}
                   </div>
                 </CardContent>
@@ -635,8 +767,8 @@ export function MobileTaskManager({
                     onDragStart={(e) => handleDragStart(e, task.id)}
                     onDragEnd={handleDragEnd}
                     onTouchStart={(e) => handleTouchStart(e, task.id)}
-                    className={`border-2 border-primary/20 transition-all duration-200 ${
-                      draggedTaskId === task.id ? 'opacity-50 scale-95' : ''
+                    className={`border-2 border-primary/20 transition-all duration-300 hover:shadow-lg group ${
+                      draggedTaskId === task.id ? 'opacity-50 scale-95 shadow-2xl' : 'hover:border-primary/40'
                     } ${isTouch ? 'cursor-grab active:cursor-grabbing' : ''}`}
                   >
                     <CardContent className="p-4">
