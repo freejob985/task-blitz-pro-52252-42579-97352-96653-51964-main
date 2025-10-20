@@ -591,12 +591,21 @@ export default function Index() {
     setHiddenSubBoards(prev => {
       const newSet = new Set(prev);
       const board = boards.find(b => b.id === boardId);
+      
       if (newSet.has(boardId)) {
+        // إظهار القسم الرئيسي
         newSet.delete(boardId);
-        showToast(`تم إظهار القسم "${board?.title}"`, 'success');
+        // إظهار جميع الأقسام الفرعية التابعة له
+        const subBoards = boards.filter(b => b.parentId === boardId);
+        subBoards.forEach(subBoard => newSet.delete(subBoard.id));
+        showToast(`تم إظهار القسم "${board?.title}" وجميع أقسامه الفرعية`, 'success');
       } else {
+        // إخفاء القسم الرئيسي
         newSet.add(boardId);
-        showToast(`تم إخفاء القسم "${board?.title}"`, 'info');
+        // إخفاء جميع الأقسام الفرعية التابعة له
+        const subBoards = boards.filter(b => b.parentId === boardId);
+        subBoards.forEach(subBoard => newSet.add(subBoard.id));
+        showToast(`تم إخفاء القسم "${board?.title}" وجميع أقسامه الفرعية`, 'info');
       }
       return newSet;
     });
@@ -1051,8 +1060,8 @@ export default function Index() {
         ) : (
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="space-y-4">
-              {viewMode === 'grid' && (
-                <GridView
+            {viewMode === 'grid' && (
+              <GridView
                 boards={boards}
                 tasks={filteredTasks}
                 onAddTask={(id) => { setDefaultBoardId(id); setEditingTask(undefined); setTaskModalOpen(true); }}
@@ -1091,6 +1100,7 @@ export default function Index() {
                 onDuplicateBoard={handleDuplicateBoard}
                 onToggleFavorite={handleToggleFavorite}
                 onArchiveBoard={handleArchiveBoard}
+                onDragEnd={handleDragEnd}
                 hiddenSubBoards={hiddenSubBoards}
                 focusedBoardId={focusedBoardId}
                 showCompletedTasks={showCompletedTasks}

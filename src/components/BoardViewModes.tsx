@@ -1,5 +1,5 @@
 // مكونات طرق العرض المختلفة للأقسام
-import { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { Grid, List, Calendar, Kanban, LayoutGrid, Table2, BarChart3, PieChart, Plus, FolderTree, Layers, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from './ui/button';
@@ -77,6 +77,7 @@ interface DefaultViewProps {
   onDuplicateBoard: (board: Board) => void;
   onToggleFavorite: (boardId: string) => void;
   onArchiveBoard: (boardId: string) => void;
+  onDragEnd?: (result: import('@hello-pangea/dnd').DropResult) => void;
   hiddenSubBoards: Set<string>;
   focusedBoardId?: string | null;
   showCompletedTasks?: boolean;
@@ -116,7 +117,18 @@ export function DefaultView(props: DefaultViewProps) {
 // مكون العرض الشبكي
 export function GridView(props: DefaultViewProps) {
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const updateScrollButtons = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setScrollPosition(scrollLeft);
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+    }
+  };
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
@@ -128,7 +140,6 @@ export function GridView(props: DefaultViewProps) {
         left: newPosition,
         behavior: 'smooth'
       });
-      setScrollPosition(newPosition);
     }
   };
 
@@ -143,15 +154,25 @@ export function GridView(props: DefaultViewProps) {
         left: newPosition,
         behavior: 'smooth'
       });
-      setScrollPosition(newPosition);
     }
   };
 
   const handleScroll = () => {
+    updateScrollButtons();
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
     if (scrollContainerRef.current) {
-      setScrollPosition(scrollContainerRef.current.scrollLeft);
+      e.preventDefault();
+      const scrollAmount = e.deltaY;
+      scrollContainerRef.current.scrollLeft += scrollAmount;
     }
   };
+
+  // تحديث حالة الأزرار عند تغيير المحتوى
+  useEffect(() => {
+    updateScrollButtons();
+  }, [props.boards, props.hiddenSubBoards]);
 
   return (
     <div className="relative">
@@ -161,8 +182,8 @@ export function GridView(props: DefaultViewProps) {
           variant="outline"
           size="sm"
           onClick={scrollLeft}
-          disabled={scrollPosition === 0}
-          className="flex items-center gap-2 hover:bg-primary/10 transition-colors"
+          disabled={!canScrollLeft}
+          className="flex items-center gap-2 hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="h-4 w-4" />
           السابق
@@ -172,7 +193,8 @@ export function GridView(props: DefaultViewProps) {
           variant="outline"
           size="sm"
           onClick={scrollRight}
-          className="flex items-center gap-2 hover:bg-primary/10 transition-colors"
+          disabled={!canScrollRight}
+          className="flex items-center gap-2 hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           التالي
           <ChevronRight className="h-4 w-4" />
@@ -180,11 +202,12 @@ export function GridView(props: DefaultViewProps) {
       </div>
 
       {/* حاوية التمرير الأفقية مع السحب والإفلات */}
-      <DragDropContext onDragEnd={() => {}}>
+      <DragDropContext onDragEnd={props.onDragEnd || (() => {})}>
         <div 
           ref={scrollContainerRef}
           className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide"
           onScroll={handleScroll}
+          onWheel={handleWheel}
         >
       {props.boards
         .filter(board => !board.parentId && !props.hiddenSubBoards.has(board.id))
