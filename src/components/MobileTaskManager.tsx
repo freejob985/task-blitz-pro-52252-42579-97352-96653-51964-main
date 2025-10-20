@@ -61,9 +61,6 @@ export function MobileTaskManager({
   const [newSubBoardDescription, setNewSubBoardDescription] = useState('');
   const [parentBoardId, setParentBoardId] = useState<string>('');
   const [swipedTaskId, setSwipedTaskId] = useState<string | null>(null);
-  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-  const [dragOverBoardId, setDragOverBoardId] = useState<string | null>(null);
-  const dragRef = useRef<HTMLDivElement>(null);
 
   // الأقسام الرئيسية فقط
   const mainBoards = boards.filter(board => !board.parentId && !board.isArchived);
@@ -154,6 +151,33 @@ export function MobileTaskManager({
     }
   };
 
+  // ألوان مختلفة لكل قسم لتمييز المهام
+  const getBoardColor = (boardId: string) => {
+    const colors = [
+      'from-blue-500/10 to-blue-600/20 border-blue-300/30',
+      'from-green-500/10 to-green-600/20 border-green-300/30',
+      'from-purple-500/10 to-purple-600/20 border-purple-300/30',
+      'from-orange-500/10 to-orange-600/20 border-orange-300/30',
+      'from-pink-500/10 to-pink-600/20 border-pink-300/30',
+      'from-indigo-500/10 to-indigo-600/20 border-indigo-300/30',
+      'from-teal-500/10 to-teal-600/20 border-teal-300/30',
+      'from-rose-500/10 to-rose-600/20 border-rose-300/30',
+    ];
+    const index = mainBoards.findIndex(board => board.id === boardId);
+    return colors[index % colors.length] || colors[0];
+  };
+
+  const getSubBoardColor = (parentBoardId: string) => {
+    const colors = [
+      'from-blue-400/5 to-blue-500/15 border-blue-200/20',
+      'from-green-400/5 to-green-500/15 border-green-200/20',
+      'from-purple-400/5 to-purple-500/15 border-purple-200/20',
+      'from-orange-400/5 to-orange-500/15 border-orange-200/20',
+    ];
+    const index = mainBoards.findIndex(board => board.id === parentBoardId);
+    return colors[index % colors.length] || colors[0];
+  };
+
   // Touch gesture handling for swipe
   const handleSwipeStart = useCallback((e: React.TouchEvent, taskId: string) => {
     if (!isTouch) return;
@@ -225,195 +249,6 @@ export function MobileTaskManager({
     showToast(newStatus === 'completed' ? 'تم تحديد المهمة كمكتملة' : 'تم إلغاء تحديد المهمة كمكتملة', 'success');
   }, [onTaskStatusChange]);
 
-  // Drag and Drop handlers for mobile - improved
-  const handleDragStart = useCallback((e: React.DragEvent, taskId: string) => {
-    setDraggedTaskId(taskId);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', taskId);
-    
-    // Create a custom drag image for better visual feedback
-    const dragElement = e.currentTarget as HTMLElement;
-    const dragImage = dragElement.cloneNode(true) as HTMLElement;
-    dragImage.style.transform = 'rotate(5deg)';
-    dragImage.style.opacity = '0.8';
-    dragImage.style.border = '2px solid #3b82f6';
-    dragImage.style.borderRadius = '12px';
-    dragImage.style.boxShadow = '0 10px 25px rgba(0,0,0,0.3)';
-    dragImage.style.pointerEvents = 'none';
-    dragImage.style.position = 'absolute';
-    dragImage.style.top = '-1000px';
-    dragImage.style.left = '-1000px';
-    dragImage.style.zIndex = '9999';
-    
-    document.body.appendChild(dragImage);
-    e.dataTransfer.setDragImage(dragImage, 0, 0);
-    
-    // Add visual feedback to original element
-    dragElement.style.opacity = '0.3';
-    dragElement.style.transform = 'scale(0.95)';
-    dragElement.style.transition = 'all 0.2s ease';
-    
-    // Clean up drag image after a short delay
-    setTimeout(() => {
-      if (document.body.contains(dragImage)) {
-        document.body.removeChild(dragImage);
-      }
-    }, 0);
-  }, []);
-
-  const handleDragEnd = useCallback((e: React.DragEvent) => {
-    setDraggedTaskId(null);
-    setDragOverBoardId(null);
-    
-    // Remove visual feedback and return to original state
-    const dragElement = e.currentTarget as HTMLElement;
-    dragElement.style.opacity = '1';
-    dragElement.style.transform = 'scale(1)';
-    dragElement.style.transition = 'all 0.3s ease';
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent, boardId: string) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverBoardId(boardId);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    // Only clear if we're leaving the board area completely
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setDragOverBoardId(null);
-    }
-  }, []);
-
-  const handleDrop = useCallback(async (e: React.DragEvent, targetBoardId: string) => {
-    e.preventDefault();
-    const taskId = e.dataTransfer.getData('text/plain');
-    
-    if (!taskId || !draggedTaskId) {
-      setDragOverBoardId(null);
-      return;
-    }
-    
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) {
-      setDragOverBoardId(null);
-      return;
-    }
-    
-    // Check if dropping on the same board
-    if (task.boardId === targetBoardId) {
-      setDragOverBoardId(null);
-      showToast('المهمة موجودة بالفعل في هذا القسم', 'info');
-      return;
-    }
-    
-    try {
-      // Move task to new board using the parent's move function
-      onMoveTask(taskId, targetBoardId);
-      
-      // Show success message
-      const targetBoard = boards.find(b => b.id === targetBoardId);
-      showToast(`تم نقل المهمة إلى ${targetBoard?.title || 'القسم الجديد'}`, 'success');
-    } catch (error) {
-      console.error('Error moving task:', error);
-      showToast('حدث خطأ أثناء نقل المهمة', 'error');
-    }
-    
-    setDragOverBoardId(null);
-  }, [draggedTaskId, tasks, boards, onMoveTask]);
-
-  // Touch drag handlers - improved for better mobile experience
-  const handleTouchStart = useCallback((e: React.TouchEvent, taskId: string) => {
-    if (!isTouch) return;
-    setDraggedTaskId(taskId);
-    
-    const touch = e.touches[0];
-    const startX = touch.clientX;
-    const startY = touch.clientY;
-    const originalTask = tasks.find(t => t.id === taskId);
-    
-    let isDragging = false;
-    let dragElement: HTMLElement | null = null;
-    
-    const handleTouchMove = (e: TouchEvent) => {
-      e.preventDefault();
-      const currentTouch = e.touches[0];
-      const deltaX = currentTouch.clientX - startX;
-      const deltaY = currentTouch.clientY - startY;
-      
-      // Check if it's a drag gesture
-      if (Math.abs(deltaX) > 15 || Math.abs(deltaY) > 15) {
-        if (!isDragging) {
-          isDragging = true;
-          dragElement = document.querySelector(`[data-task-id="${taskId}"]`) as HTMLElement;
-          if (dragElement) {
-            dragElement.style.transition = 'none';
-            dragElement.style.zIndex = '1000';
-            dragElement.style.boxShadow = '0 10px 25px rgba(0,0,0,0.3)';
-            dragElement.style.border = '2px solid #3b82f6';
-          }
-        }
-        
-        // Add visual feedback for dragging
-        if (dragElement) {
-          dragElement.style.transform = `translate(${deltaX}px, ${deltaY}px) rotate(2deg)`;
-          dragElement.style.opacity = '0.8';
-        }
-        
-        // Check for drop zones
-        const element = document.elementFromPoint(currentTouch.clientX, currentTouch.clientY);
-        const boardElement = element?.closest('[data-board-id]');
-        if (boardElement) {
-          const boardId = boardElement.getAttribute('data-board-id');
-          setDragOverBoardId(boardId);
-        } else {
-          setDragOverBoardId(null);
-        }
-      }
-    };
-    
-    const handleTouchEnd = (e: TouchEvent) => {
-      const touch = e.changedTouches[0];
-      const element = document.elementFromPoint(touch.clientX, touch.clientY);
-      
-      // Check if dropped on a valid board
-      const boardElement = element?.closest('[data-board-id]');
-      if (boardElement && isDragging) {
-        const boardId = boardElement.getAttribute('data-board-id');
-        if (boardId && originalTask && boardId !== originalTask.boardId) {
-          try {
-            onMoveTask(taskId, boardId);
-            const targetBoard = boards.find(b => b.id === boardId);
-            showToast(`تم نقل المهمة إلى ${targetBoard?.title || 'القسم الجديد'}`, 'success');
-          } catch (error) {
-            console.error('Error moving task:', error);
-            showToast('حدث خطأ أثناء نقل المهمة', 'error');
-          }
-        } else if (boardId === originalTask?.boardId) {
-          showToast('المهمة موجودة بالفعل في هذا القسم', 'info');
-        }
-      }
-      
-      // Reset visual feedback and return to original position
-      if (dragElement) {
-        dragElement.style.transition = 'all 0.3s ease';
-        dragElement.style.transform = '';
-        dragElement.style.opacity = '1';
-        dragElement.style.zIndex = '';
-        dragElement.style.boxShadow = '';
-        dragElement.style.border = '';
-      }
-      
-      setDraggedTaskId(null);
-      setDragOverBoardId(null);
-      
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
-    
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd);
-  }, [isTouch, tasks, boards, onMoveTask]);
 
   return (
     <div className={`${isMobile ? 'p-3' : 'p-4'} space-y-4 bg-gradient-to-br from-background to-muted/20 min-h-screen`}>
@@ -427,43 +262,43 @@ export function MobileTaskManager({
         </p>
       </div>
 
-      {/* التبويبات المحسنة */}
+      {/* التبويبات المحسنة والمكبرة */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-gradient-to-r from-primary/10 to-accent/10 border-2 border-primary/20 rounded-xl p-1">
+        <TabsList className="grid w-full grid-cols-4 bg-gradient-to-r from-primary/10 to-accent/10 border-2 border-primary/20 rounded-2xl p-2 h-16">
           <TabsTrigger 
             value="tasks" 
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-200 rounded-lg font-medium"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-xl data-[state=active]:scale-105 transition-all duration-300 rounded-xl font-semibold text-sm h-12 data-[state=active]:border-2 data-[state=active]:border-primary/30"
           >
-            <div className="flex items-center gap-1">
-              <CheckCircle className="h-3 w-3" />
-              <span className="hidden sm:inline">المهام</span>
+            <div className="flex flex-col items-center gap-1">
+              <CheckCircle className="h-5 w-5" />
+              <span className="text-xs font-medium">المهام</span>
             </div>
           </TabsTrigger>
           <TabsTrigger 
             value="all-tasks"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-200 rounded-lg font-medium"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-xl data-[state=active]:scale-105 transition-all duration-300 rounded-xl font-semibold text-sm h-12 data-[state=active]:border-2 data-[state=active]:border-primary/30"
           >
-            <div className="flex items-center gap-1">
-              <Layers className="h-3 w-3" />
-              <span className="hidden sm:inline">جميع المهام</span>
+            <div className="flex flex-col items-center gap-1">
+              <Layers className="h-5 w-5" />
+              <span className="text-xs font-medium">جميع المهام</span>
             </div>
           </TabsTrigger>
           <TabsTrigger 
             value="boards"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-200 rounded-lg font-medium"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-xl data-[state=active]:scale-105 transition-all duration-300 rounded-xl font-semibold text-sm h-12 data-[state=active]:border-2 data-[state=active]:border-primary/30"
           >
-            <div className="flex items-center gap-1">
-              <FolderPlus className="h-3 w-3" />
-              <span className="hidden sm:inline">الأقسام</span>
+            <div className="flex flex-col items-center gap-1">
+              <FolderPlus className="h-5 w-5" />
+              <span className="text-xs font-medium">الأقسام</span>
             </div>
           </TabsTrigger>
           <TabsTrigger 
             value="add"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-200 rounded-lg font-medium"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-xl data-[state=active]:scale-105 transition-all duration-300 rounded-xl font-semibold text-sm h-12 data-[state=active]:border-2 data-[state=active]:border-primary/30"
           >
-            <div className="flex items-center gap-1">
-              <Plus className="h-3 w-3" />
-              <span className="hidden sm:inline">إضافة</span>
+            <div className="flex flex-col items-center gap-1">
+              <Plus className="h-5 w-5" />
+              <span className="text-xs font-medium">إضافة</span>
             </div>
           </TabsTrigger>
         </TabsList>
@@ -537,13 +372,7 @@ export function MobileTaskManager({
                                     <div 
                                       key={task.id} 
                                       data-task-id={task.id}
-                                      draggable
-                                      onDragStart={(e) => handleDragStart(e, task.id)}
-                                      onDragEnd={handleDragEnd}
-                                      onTouchStart={(e) => handleTouchStart(e, task.id)}
-                                      className={`group bg-gradient-to-r from-background to-muted/10 rounded-lg border border-accent/20 p-3 transition-all duration-300 hover:shadow-md ${
-                                        draggedTaskId === task.id ? 'opacity-50 scale-95 shadow-lg' : 'hover:border-accent/40'
-                                      } ${isTouch ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                                      className={`group bg-gradient-to-r ${getSubBoardColor(subBoard.parentId || '')} rounded-lg border p-3 transition-all duration-300 hover:shadow-md hover:border-accent/40`}
                                     >
                                       <div className="flex items-center gap-2">
                                         <Checkbox
@@ -551,7 +380,6 @@ export function MobileTaskManager({
                                           onCheckedChange={() => handleToggleCompletion(task.id, task.status)}
                                           className="h-3 w-3 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
                                         />
-                                        <GripVertical className="h-3 w-3 text-muted-foreground group-hover:text-accent transition-colors" />
                                         {getStatusIcon(task.status)}
                                         <span className={`text-sm flex-1 truncate font-medium ${
                                           task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground'
@@ -589,17 +417,9 @@ export function MobileTaskManager({
                       <div 
                         key={task.id} 
                         data-task-id={task.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, task.id)}
-                        onDragEnd={handleDragEnd}
-                        onTouchStart={(e) => {
-                          handleTouchStart(e, task.id);
-                          handleSwipeStart(e, task.id);
-                        }}
-                        className={`relative group bg-gradient-to-r from-background to-muted/20 rounded-xl border-2 transition-all duration-300 hover:shadow-lg ${
-                          swipedTaskId === task.id ? 'border-primary/50 bg-primary/5 shadow-lg' : 'border-primary/20 hover:border-primary/40'
-                        } ${isTouch ? 'cursor-grab active:cursor-grabbing' : ''} ${
-                          draggedTaskId === task.id ? 'opacity-50 scale-95 shadow-2xl' : ''
+                        onTouchStart={(e) => handleSwipeStart(e, task.id)}
+                        className={`relative group bg-gradient-to-r ${getBoardColor(board.id)} rounded-xl border-2 transition-all duration-300 hover:shadow-lg ${
+                          swipedTaskId === task.id ? 'border-primary/50 bg-primary/5 shadow-lg' : 'hover:border-primary/40'
                         }`}
                         onClick={() => isTouch && handleQuickStatusChange(task.id, task.status)}
                       >
@@ -616,10 +436,6 @@ export function MobileTaskManager({
                                 />
                               </div>
                               
-                              {/* Drag handle */}
-                              <div className="flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors">
-                                <GripVertical className="h-4 w-4" />
-                              </div>
                               
                               {/* Status icon */}
                               <div className="flex-shrink-0">
@@ -685,9 +501,13 @@ export function MobileTaskManager({
                               </Badge>
                             </div>
                             
-                            {/* Status label */}
-                            <div className="text-xs text-muted-foreground font-medium">
-                              {getStatusLabel(task.status)}
+                            {/* Status label and board indicator */}
+                            <div className="flex items-center gap-2">
+                              <div className="text-xs text-muted-foreground font-medium">
+                                {getStatusLabel(task.status)}
+                              </div>
+                              <div className={`w-3 h-3 rounded-full ${getBoardColor(board.id).split(' ')[0].replace('from-', 'bg-')} border border-white shadow-sm`} 
+                                   title={board.title} />
                             </div>
                           </div>
                         </div>
@@ -720,30 +540,6 @@ export function MobileTaskManager({
 
         {/* تبويب جميع المهام */}
         <TabsContent value="all-tasks" className="space-y-4">
-          {/* Drop zones for boards */}
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            {mainBoards.map(board => (
-              <div
-                key={`drop-${board.id}`}
-                data-board-id={board.id}
-                className={`p-3 rounded-lg border-2 border-dashed text-center transition-colors ${
-                  dragOverBoardId === board.id 
-                    ? 'border-primary bg-primary/10' 
-                    : 'border-muted-foreground/30'
-                }`}
-                onDragOver={(e) => handleDragOver(e, board.id)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, board.id)}
-              >
-                <div className="text-xs text-muted-foreground">
-                  {board.title}
-                </div>
-                <div className="text-xs text-muted-foreground/60 mt-1">
-                  اسحب المهام هنا
-                </div>
-              </div>
-            ))}
-          </div>
 
           <div className="space-y-3">
             {tasks.length === 0 ? (
@@ -763,13 +559,7 @@ export function MobileTaskManager({
                   <Card 
                     key={task.id} 
                     data-task-id={task.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, task.id)}
-                    onDragEnd={handleDragEnd}
-                    onTouchStart={(e) => handleTouchStart(e, task.id)}
-                    className={`border-2 border-primary/20 transition-all duration-300 hover:shadow-lg group ${
-                      draggedTaskId === task.id ? 'opacity-50 scale-95 shadow-2xl' : 'hover:border-primary/40'
-                    } ${isTouch ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                    className={`border-2 transition-all duration-300 hover:shadow-lg group hover:border-primary/40 bg-gradient-to-r ${board ? getBoardColor(board.id) : 'from-gray-500/10 to-gray-600/20 border-gray-300/30'}`}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
@@ -780,7 +570,6 @@ export function MobileTaskManager({
                             className="h-3 w-3 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
                           />
                           <div className="flex items-center gap-1">
-                            <GripVertical className="h-3 w-3 text-muted-foreground" />
                             {getStatusIcon(task.status)}
                           </div>
                           <div className="flex-1">
@@ -835,8 +624,14 @@ export function MobileTaskManager({
                             {task.difficulty === 'easy' ? 'سهل' : task.difficulty === 'medium' ? 'متوسط' : task.difficulty === 'hard' ? 'صعب' : 'خبير'}
                           </Badge>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {board?.title || 'قسم غير محدد'}
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs text-muted-foreground">
+                            {board?.title || 'قسم غير محدد'}
+                          </div>
+                          {board && (
+                            <div className={`w-3 h-3 rounded-full ${getBoardColor(board.id).split(' ')[0].replace('from-', 'bg-')} border border-white shadow-sm`} 
+                                 title={board.title} />
+                          )}
                         </div>
                       </div>
                       
