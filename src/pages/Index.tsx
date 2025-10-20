@@ -29,6 +29,8 @@ import {
   ChartView 
 } from '@/components/BoardViewModes';
 import { QuickAddMode } from '@/components/QuickAddMode';
+import { MobileTaskManager } from '@/components/MobileTaskManager';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { initDB, getAllBoards, getAllTasks, saveBoard, saveTask, saveTasks, deleteBoard, deleteTask, archiveTask, getSettings, saveSettings, deleteAllData } from '@/lib/db';
 import { showToast } from '@/lib/toast';
 import { playSound } from '@/lib/sounds';
@@ -43,6 +45,7 @@ import {
 import type { Board, Task } from '@/types';
 
 export default function Index() {
+  const isMobile = useIsMobile();
   const [boards, setBoards] = useState<Board[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -985,7 +988,48 @@ export default function Index() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+      {/* عرض مكون الموبيل */}
+      {isMobile ? (
+        <MobileTaskManager
+          boards={boards}
+          tasks={tasks}
+          onAddTask={(boardId) => {
+            setDefaultBoardId(boardId);
+            setTaskModalOpen(true);
+          }}
+          onAddBoard={(title, description, parentId) => {
+            const newBoard: Board = {
+              id: `board-${Date.now()}`,
+              title,
+              description,
+              order: boards.length,
+              createdAt: new Date().toISOString(),
+              parentId,
+            };
+            saveBoard(newBoard);
+            setBoards(prev => [...prev, newBoard].sort((a, b) => a.order - b.order));
+            showToast('تم إضافة القسم بنجاح', 'success');
+          }}
+          onEditTask={(task) => { setEditingTask(task); setTaskModalOpen(true); }}
+          onDeleteTask={handleDeleteTask}
+          onTaskStatusChange={async (id, status) => {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+              const updated = { ...task, status };
+              setTasks(prev => prev.map(t => t.id === id ? updated : t));
+              await saveTask(updated);
+              showToast('تم تحديث حالة المهمة', 'success');
+            }
+          }}
+          onToggleSubBoardVisibility={handleToggleSubBoardVisibility}
+          hiddenSubBoards={hiddenSubBoards}
+          onBulkAdd={(boardId) => {
+            setDefaultBoardId(boardId);
+            setBulkModalOpen(true);
+          }}
+        />
+      ) : (
+        <main className="container mx-auto px-4 py-6">
         {/* الإحصائيات */}
         <Statistics tasks={tasks} />
 
@@ -1375,7 +1419,8 @@ export default function Index() {
             </div>
           </DragDropContext>
         )}
-      </main>
+        </main>
+      )}
 
       <TaskEditModal open={taskModalOpen} onOpenChange={setTaskModalOpen} task={editingTask} boards={boards} defaultBoardId={defaultBoardId} onSave={handleSaveTask} />
       <BulkAddModal open={bulkModalOpen} onOpenChange={setBulkModalOpen} boards={boards} defaultBoardId={defaultBoardId} onTasksAdded={loadData} />
