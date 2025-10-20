@@ -1058,6 +1058,7 @@ export default function Index() {
             setBulkModalOpen(true);
           }}
           onMoveTask={handleMoveToBoard}
+          onArchiveTask={handleArchiveTask}
         />
       ) : (
         <main className={`container mx-auto ${isMobile ? 'px-3 py-4' : isTablet ? 'px-4 py-5' : 'px-4 py-6'}`}>

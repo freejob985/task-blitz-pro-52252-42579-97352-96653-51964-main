@@ -1,6 +1,6 @@
 // مكون إدارة المهام للهواتف المحمولة
 import { useState, useCallback, useRef } from 'react';
-import { Plus, Layers, FolderPlus, Edit2, Trash2, CheckCircle, Clock, AlertCircle, XCircle, Star, Archive, Eye, EyeOff, MoreVertical, ArrowLeft, ArrowRight, GripVertical } from 'lucide-react';
+import { Plus, Layers, FolderPlus, Edit2, Trash2, CheckCircle, Clock, AlertCircle, XCircle, Star, Archive, Eye, EyeOff, MoreVertical, ArrowLeft, ArrowRight, GripVertical, Check } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -10,8 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { Checkbox } from './ui/checkbox';
 import { showToast } from '@/lib/toast';
 import { useDeviceType } from '@/hooks/use-mobile';
+import { archiveTask } from '@/lib/db';
 import type { Board, Task, TaskStatus, TaskPriority, TaskDifficulty } from '@/types';
 
 interface MobileTaskManagerProps {
@@ -26,6 +28,7 @@ interface MobileTaskManagerProps {
   hiddenSubBoards: Set<string>;
   onBulkAdd: (boardId: string) => void;
   onMoveTask: (taskId: string, boardId: string) => void;
+  onArchiveTask?: (id: string) => void;
 }
 
 export function MobileTaskManager({
@@ -40,6 +43,7 @@ export function MobileTaskManager({
   hiddenSubBoards,
   onBulkAdd,
   onMoveTask,
+  onArchiveTask,
 }: MobileTaskManagerProps) {
   const { isMobile, isTablet, isTouch } = useDeviceType();
   const [activeTab, setActiveTab] = useState('tasks');
@@ -198,6 +202,28 @@ export function MobileTaskManager({
       default: return 'غير محدد';
     }
   };
+
+  // Archive task handler
+  const handleArchiveTask = useCallback(async (taskId: string) => {
+    try {
+      if (onArchiveTask) {
+        onArchiveTask(taskId);
+      } else {
+        await archiveTask(taskId);
+      }
+      showToast('تم أرشفة المهمة بنجاح', 'success');
+    } catch (error) {
+      console.error('Error archiving task:', error);
+      showToast('حدث خطأ أثناء أرشفة المهمة', 'error');
+    }
+  }, [onArchiveTask]);
+
+  // Toggle task completion
+  const handleToggleCompletion = useCallback((taskId: string, currentStatus: TaskStatus) => {
+    const newStatus = currentStatus === 'completed' ? 'waiting' : 'completed';
+    onTaskStatusChange(taskId, newStatus);
+    showToast(newStatus === 'completed' ? 'تم تحديد المهمة كمكتملة' : 'تم إلغاء تحديد المهمة كمكتملة', 'success');
+  }, [onTaskStatusChange]);
 
   // Drag and Drop handlers for mobile
   const handleDragStart = useCallback((e: React.DragEvent, taskId: string) => {
@@ -401,15 +427,35 @@ export function MobileTaskManager({
                                 )}
                                 <div className="space-y-1">
                                   {subBoardTasks.slice(0, 3).map(task => (
-                                    <div key={task.id} className="flex items-center gap-2 p-2 bg-background rounded border">
+                                    <div 
+                                      key={task.id} 
+                                      data-task-id={task.id}
+                                      draggable
+                                      onDragStart={(e) => handleDragStart(e, task.id)}
+                                      onDragEnd={handleDragEnd}
+                                      onTouchStart={(e) => handleTouchStart(e, task.id)}
+                                      className={`flex items-center gap-2 p-2 bg-background rounded border transition-all duration-200 ${
+                                        draggedTaskId === task.id ? 'opacity-50 scale-95' : ''
+                                      } ${isTouch ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                                    >
+                                      <Checkbox
+                                        checked={task.status === 'completed'}
+                                        onCheckedChange={() => handleToggleCompletion(task.id, task.status)}
+                                        className="h-3 w-3 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                                      />
+                                      <GripVertical className="h-3 w-3 text-muted-foreground" />
                                       {getStatusIcon(task.status)}
-                                      <span className="text-xs flex-1 truncate">{task.title}</span>
+                                      <span className={`text-xs flex-1 truncate ${
+                                        task.status === 'completed' ? 'line-through text-muted-foreground' : ''
+                                      }`}>
+                                        {task.title}
+                                      </span>
                                       <div className="flex gap-1">
                                         <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
-                                          {task.priority}
+                                          {task.priority === 'high' ? 'عالي' : task.priority === 'medium' ? 'متوسط' : 'منخفض'}
                                         </Badge>
                                         <Badge className={`text-xs ${getDifficultyColor(task.difficulty)}`}>
-                                          {task.difficulty}
+                                          {task.difficulty === 'easy' ? 'سهل' : task.difficulty === 'medium' ? 'متوسط' : task.difficulty === 'hard' ? 'صعب' : 'خبير'}
                                         </Badge>
                                       </div>
                                     </div>
@@ -433,16 +479,48 @@ export function MobileTaskManager({
                     {boardTasks.slice(0, isMobile ? 3 : 5).map(task => (
                       <div 
                         key={task.id} 
+                        data-task-id={task.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, task.id)}
+                        onDragEnd={handleDragEnd}
+                        onTouchStart={(e) => {
+                          handleTouchStart(e, task.id);
+                          handleSwipeStart(e, task.id);
+                        }}
                         className={`relative flex items-center gap-2 p-3 bg-muted/30 rounded-lg border transition-all duration-200 ${
                           swipedTaskId === task.id ? 'bg-primary/10 border-primary/30' : 'hover:bg-muted/50'
-                        } ${isTouch ? 'cursor-pointer' : ''}`}
-                        onTouchStart={(e) => handleSwipeStart(e, task.id)}
+                        } ${isTouch ? 'cursor-grab active:cursor-grabbing' : ''} ${
+                          draggedTaskId === task.id ? 'opacity-50 scale-95' : ''
+                        }`}
                         onClick={() => isTouch && handleQuickStatusChange(task.id, task.status)}
                       >
+                        {/* Checkbox for completion */}
+                        <div className="flex-shrink-0">
+                          <Checkbox
+                            checked={task.status === 'completed'}
+                            onCheckedChange={() => handleToggleCompletion(task.id, task.status)}
+                            className="h-3 w-3 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                          />
+                        </div>
+                        
+                        {/* Drag handle */}
+                        <div className="flex-shrink-0 text-muted-foreground">
+                          <GripVertical className="h-3 w-3" />
+                        </div>
+                        
+                        {/* Status icon */}
                         <div className="flex-shrink-0">
                           {getStatusIcon(task.status)}
                         </div>
-                        <span className="text-sm flex-1 truncate font-medium">{task.title}</span>
+                        
+                        {/* Task title */}
+                        <span className={`text-sm flex-1 truncate font-medium ${
+                          task.status === 'completed' ? 'line-through text-muted-foreground' : ''
+                        }`}>
+                          {task.title}
+                        </span>
+                        
+                        {/* Priority and difficulty badges */}
                         <div className="flex gap-1 flex-shrink-0">
                           <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
                             {task.priority === 'high' ? 'عالي' : task.priority === 'medium' ? 'متوسط' : 'منخفض'}
@@ -451,6 +529,8 @@ export function MobileTaskManager({
                             {task.difficulty === 'easy' ? 'سهل' : task.difficulty === 'medium' ? 'متوسط' : task.difficulty === 'hard' ? 'صعب' : 'خبير'}
                           </Badge>
                         </div>
+                        
+                        {/* Actions menu */}
                         {isTouch && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -459,9 +539,17 @@ export function MobileTaskManager({
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleToggleCompletion(task.id, task.status)}>
+                                <CheckCircle className="h-4 w-4 ml-2" />
+                                {task.status === 'completed' ? 'إلغاء التحديد' : 'تحديد كمكتمل'}
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => onEditTask(task)}>
                                 <Edit2 className="h-4 w-4 ml-2" />
                                 تعديل
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleArchiveTask(task.id)}>
+                                <Archive className="h-4 w-4 ml-2" />
+                                أرشفة
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 onClick={() => onDeleteTask(task.id)}
@@ -473,6 +561,8 @@ export function MobileTaskManager({
                             </DropdownMenuContent>
                           </DropdownMenu>
                         )}
+                        
+                        {/* Swipe indicator */}
                         {swipedTaskId === task.id && (
                           <div className="absolute inset-0 bg-primary/5 border-2 border-primary/30 rounded-lg flex items-center justify-center">
                             <div className="flex items-center gap-2 text-primary">
@@ -552,12 +642,21 @@ export function MobileTaskManager({
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2 flex-1">
+                          <Checkbox
+                            checked={task.status === 'completed'}
+                            onCheckedChange={() => handleToggleCompletion(task.id, task.status)}
+                            className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                          />
                           <div className="flex items-center gap-1">
                             <GripVertical className="h-3 w-3 text-muted-foreground" />
                             {getStatusIcon(task.status)}
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-medium text-sm leading-tight">{task.title}</h3>
+                            <h3 className={`font-medium text-sm leading-tight ${
+                              task.status === 'completed' ? 'line-through text-muted-foreground' : ''
+                            }`}>
+                              {task.title}
+                            </h3>
                             {task.description && (
                               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                                 {task.description}
@@ -572,9 +671,17 @@ export function MobileTaskManager({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleToggleCompletion(task.id, task.status)}>
+                              <CheckCircle className="h-4 w-4 ml-2" />
+                              {task.status === 'completed' ? 'إلغاء التحديد' : 'تحديد كمكتمل'}
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => onEditTask(task)}>
                               <Edit2 className="h-4 w-4 ml-2" />
                               تعديل
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleArchiveTask(task.id)}>
+                              <Archive className="h-4 w-4 ml-2" />
+                              أرشفة
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => onDeleteTask(task.id)}
