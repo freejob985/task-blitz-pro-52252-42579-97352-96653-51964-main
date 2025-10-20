@@ -202,13 +202,12 @@ export function GridView(props: DefaultViewProps) {
       </div>
 
       {/* حاوية التمرير الأفقية مع السحب والإفلات */}
-      <DragDropContext onDragEnd={props.onDragEnd || (() => {})}>
-        <div 
-          ref={scrollContainerRef}
-          className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide"
-          onScroll={handleScroll}
-          onWheel={handleWheel}
-        >
+      <div 
+        ref={scrollContainerRef}
+        className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide"
+        onScroll={handleScroll}
+        onWheel={handleWheel}
+      >
       {props.boards
         .filter(board => !board.parentId && !props.hiddenSubBoards.has(board.id))
         .map((board) => {
@@ -379,7 +378,6 @@ export function GridView(props: DefaultViewProps) {
           );
         })}
         </div>
-      </DragDropContext>
     </div>
   );
 }
